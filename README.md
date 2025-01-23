@@ -2,6 +2,11 @@
 
 这里是老鸽子Yuki的个人主页。
 
+## Education
+
+- 月之森女子学园（肄业）
+- 克莱登大学计算器专业 PhD Candidate（已quit）
+
 ## Select Publications
 
 **光荣之路：概率视角（Paths of Glory: A Probabilistic Perspective）** [thesis](https://hzsydy.gitbook.io/pog)
