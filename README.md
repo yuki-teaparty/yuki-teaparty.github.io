@@ -1,22 +1,30 @@
-# Intro
+# yuki-teaparty.github.io
 
-这里是老鸽子Yuki的个人主页。
+老鸽子 Yuki 的个人主页 —— 🕊️ 茶话会主题的单页站点。
 
-什么都摸一点的老萌豚。大概德式桌游和战棋玩的比较多。
+线上地址：<https://yuki-teaparty.github.io/>
 
-最喜欢的CP是《莉兹与青鸟》的铠塚霙和伞木希美。
+## 技术栈
 
-## Select Publications
+纯静态 HTML / CSS / JS，**不依赖任何构建工具**（`.nojekyll` 让 GitHub Pages 直接服务原始文件）。
 
-**光荣之路：一种概率视角（Paths of Glory: A Probabilistic Perspective）** [thesis](https://hzsydy.gitbook.io/pog)
+| 路径 | 说明 |
+|------|------|
+| `index.html` | 全部页面内容（Hero / 关于 / 精选作品 / 页脚）|
+| `assets/css/style.css` | 茶话会主题样式 |
+| `assets/js/main.js` | 滚动淡入效果 |
+| `.nojekyll` | 关闭 GitHub Pages 的 Jekyll 处理，按原样部署 |
 
-*Gitbook*, 2018. 
+## 本地预览
 
-**家用扩散模型** [blog](https://zhuanlan.zhihu.com/p/668940718)
+直接用浏览器打开 `index.html` 即可；或起一个静态服务器：
 
-*Zhihu*, 2023. 
+```bash
+python -m http.server 4000   # 然后访问 http://localhost:4000
+```
 
-**Crychic，但是1914** 
-[paper](https://nga.178.com/read.php?tid=40784913) [video](https://space.bilibili.com/2335347/channel/collectiondetail?sid=3766243)
+## 自定义
 
-*Forum of Second-Dimentional TRPG, National Geographic of Azeroth*, 2024. 
+- **头像**：把图片放到 `assets/img/avatar.jpg`，再把 `index.html` 里 `.avatar` 中的占位 `<span>` 换成 `<img src="./assets/img/avatar.jpg" alt="老鸽子 Yuki">`。
+- **文字 / 兴趣 / 社交链接 / 作品**：都直接在 `index.html` 里改对应区块即可。
+- **配色 / 字体**：在 `assets/css/style.css` 顶部的 `:root` 变量里调。

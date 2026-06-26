@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mizore的个人主页</title>
+  <meta name="description" content="我们所经历的每个平凡的日常，也许就是连续发生的奇迹。">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Mizore的个人主页">
+  <meta property="og:description" content="我们所经历的每个平凡的日常，也许就是连续发生的奇迹。">
+  <meta property="og:type" content="website">
+
+  <!-- emoji favicon（青鸟），无需图片文件 -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+
+  <!-- 拉丁标题字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+
+<body>
+  <main class="page">
+
+    <!-- ── Hero ─────────────────────────────────────────────── -->
+    <header class="hero reveal">
+      <div class="hero__deco" aria-hidden="true">
+        <span class="deco deco--bird">🕊️</span>
+        <span class="deco deco--tea">🍵</span>
+        <span class="deco deco--leaf">🌿</span>
+      </div>
+
+      <div class="avatar">
+        <img src="./assets/img/avatar.jpg" alt="Mizore">
+      </div>
+
+      <!-- <p class="hero__site">Mizore的个人主页</p> -->
+      <h1 class="hero__name">Mizore</h1>
+      <p class="hero__tagline">我们所经历的每个平凡的日常，也许就是连续发生的奇迹。</p>
+
+      <nav class="socials" aria-label="社交链接">
+        <a class="social" href="https://www.zhihu.com/column/c_1060863833056382976" target="_blank" rel="noopener">
+          <span class="social__icon" aria-hidden="true">📝</span>知乎专栏
+        </a>
+        <a class="social" href="https://space.bilibili.com/7729686" target="_blank" rel="noopener">
+          <span class="social__icon" aria-hidden="true">📺</span>Bilibili
+        </a>
+        <a class="social" href="mailto:mizore@nozomizore.com">
+          <span class="social__icon" aria-hidden="true">✉️</span>Email
+        </a>
+      </nav>
+    </header>
+
+    <!-- ── 关于 ─────────────────────────────────────────────── -->
+    <section class="section reveal" aria-labelledby="about-title">
+      <h2 id="about-title" class="section__title"><span>关于</span></h2>
+      <p class="about__line">什么都摸一点的老萌豚。大概德式桌游和战棋玩的比较多。</p>
+      <p class="about__line">最喜欢的 CP 是《莉兹与青鸟》的铠塚霙和伞木希美。</p>
+
+    </section>
+
+    <section class="section reveal" aria-labelledby="pub-title">
+      <h2 id="pub-title" class="section__title"><span>作品集</span></h2>
+      <div class="cards">
+
+        <article class="card">
+          <div class="card__head">
+            <h3 class="card__title">光荣之路：一种概率视角 <span class="card__year">2018</span></h3>
+            <span class="card__role">主编 / 通讯</span>
+          </div>
+          <p class="card__desc">通称“鸽子攻略”。用概率论的视角拆解一战策略桌游《Paths of Glory》的优势策略。<br>
+            <br>
+            经统计，读过鸽子攻略的玩家击败RTT上随机老外的概率高达87.53%（大雾）
+          </p>
+          <p class="card__links">
+            <a class="btn" href="https://hzsydy.gitbook.io/pog" target="_blank" rel="noopener">攻略（Gitbook）</a>
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card__head">
+            <h3 class="card__title">OCS蓝色方案 42年战报 <span class="card__year">2021-2022</span></h3>
+          </div>
+          <p class="card__desc">可能直到2022年为止是全中国开过规模最大的OCS剧本。<br>
+            特别的，在7.8剧本中德军成功迫使苏联两个方面军断补投降，应该是全中国单次歼灭敌军数量最多的OCS战报（详见g司机为此制作的视频）
+          </p>
+          <p class="card__links">
+            <a class="btn" href="https://hzsydy.gitbook.io/ocs-aars" target="_blank" rel="noopener">战报（Gitbook）</a>
+            <a class="btn" href="https://www.bilibili.com/video/BV1Hm4y1u79H" target="_blank"
+              rel="noopener">视频（Bilibili）</a>
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card__head">
+            <h3 class="card__title">家用扩散模型 <span class="card__year">2023</span></h3>
+          </div>
+          <p class="card__desc">关于如何在看diffusion论文的时候不被作者们的高视角大饼吓退的攻略。</p>
+          <p class="card__links">
+            <a class="btn" href="https://zhuanlan.zhihu.com/p/668940718" target="_blank" rel="noopener">锐意重置中...</a>
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card__head">
+            <h3 class="card__title">Crychic，但是 1914 <span class="card__year">2024-</span></h3>
+            <span class="card__role">主创 / 科学顾问</span>
+          </div>
+          <p class="card__desc">如果Bang Dream的故事发生在1914年而不是2014年...</p>
+          <p class="card__links">
+            <a class="btn" href="https://nga.178.com/read.php?tid=40784913" target="_blank" rel="noopener">安科（NGA）</a>
+            <a class="btn" href="https://space.bilibili.com/2335347/channel/collectiondetail?sid=3766243"
+              target="_blank" rel="noopener">视频（Bilibili）</a>
+          </p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ── 页脚 ─────────────────────────────────────────────── -->
+    <footer class="footer">
+      <p>© Mizore · made with 🍵</p>
+    </footer>
+
+  </main>
+
+  <script src="./assets/js/main.js"></script>
+</body>
+
+</html>
