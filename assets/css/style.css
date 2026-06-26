@@ -253,6 +253,46 @@ a:hover { color: var(--tea); }
   transform: translateY(-2px);
 }
 
+/* ── 简单条目（社区服务 / 奖项）─────────────────────────────── */
+.entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.entry {
+  padding: 14px 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+.entry__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.entry__title { font-size: 1rem; color: var(--ink); overflow-wrap: break-word; }
+.entry__desc { margin: 8px 0 0; color: var(--muted); font-size: 0.92rem; line-height: 1.7; overflow-wrap: break-word; }
+.entry__year,
+.entry__rank {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-head);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  padding: 2px 12px;
+  white-space: nowrap;
+}
+.entry__year {
+  color: var(--bird-deep);
+  background: rgba(127, 181, 201, 0.14);
+  border: 1px solid rgba(127, 181, 201, 0.34);
+}
+.entry__rank {
+  color: #a87b3d;
+  background: rgba(195, 157, 114, 0.18);
+  border: 1px solid rgba(195, 157, 114, 0.45);
+}
+
 /* ── Footer ───────────────────────────────────────────────── */
 .footer {
   margin-top: 64px;
