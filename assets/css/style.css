@@ -293,6 +293,30 @@ a:hover { color: var(--tea); }
   border: 1px solid rgba(195, 157, 114, 0.45);
 }
 
+/* ── 青鸟大图 ─────────────────────────────────────────────── */
+.bluebirds {
+  margin: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.bluebirds img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.5s ease;
+}
+.bluebirds:hover img { transform: scale(1.03); }
+.bluebirds figcaption {
+  padding: 10px 16px;
+  text-align: center;
+  font-family: var(--font-head);
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
 /* ── Footer ───────────────────────────────────────────────── */
 .footer {
   margin-top: 64px;
