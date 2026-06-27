@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} · Mizore</title>
+  <meta name="description" content="{{summary}}">
+
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="{{summary}}">
+  <meta property="og:type" content="article">
+
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/blog.css">
+
+  <!-- MathJax v3（运行时渲染；\bm 等非标准宏在 macros 里补齐）-->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        tags: 'none',
+        macros: { bm: ['\\boldsymbol{#1}', 1] }
+      },
+      svg: { fontCache: 'global' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body class="has-sidebar">
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="文章目录" aria-controls="sidebar" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="文章目录">
+    <div class="sidebar__inner">
+      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__home" href="/">← 回主页</a>
+      <nav class="sidebar__nav">
+        <p class="sidebar__heading">家用扩散模型系列</p>
+        <ul class="sidebar__list">
+{{sidebar_list}}
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="page">
+
+    <nav class="topnav" aria-label="主导航">
+      <a class="topnav__link" href="/">Home</a>
+      <a class="topnav__link is-active" href="/blog/">Blog</a>
+    </nav>
+
+    <article class="post reveal">
+      <header class="post__header">
+        <h1 class="post__title">{{title}}</h1>
+        <p class="post__meta">
+          <span class="post__date">{{date}}</span>
+          <span class="post__sep">·</span>
+          <a class="post__origin" href="{{original_url}}" target="_blank" rel="noopener">{{source}}原文</a>
+        </p>
+      </header>
+
+      <div class="post__body">
+        {{content}}
+      </div>
+    </article>
+
+    <nav class="post-nav-bottom">
+      {{prev_link}}
+      {{next_link}}
+    </nav>
+
+    <footer class="footer">
+      <p>© Mizore · made with 🍵</p>
+    </footer>
+
+  </main>
+
+  <script src="/assets/js/main.js"></script>
+  <script src="/assets/js/blog.js"></script>
+</body>
+
+</html>

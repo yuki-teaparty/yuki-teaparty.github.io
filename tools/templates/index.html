@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>茶话 · Blog · Mizore</title>
+  <meta name="description" content="Mizore 的博客 —— 从知乎搬运而来的家用扩散模型系列与杂谈。">
+
+  <meta property="og:title" content="茶话 · Blog">
+  <meta property="og:description" content="Mizore 的博客 —— 从知乎搬运而来的家用扩散模型系列与杂谈。">
+  <meta property="og:type" content="website">
+
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/blog.css">
+</head>
+
+<body class="has-sidebar">
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="文章目录" aria-controls="sidebar" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="文章目录">
+    <div class="sidebar__inner">
+      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__home" href="/">← 回主页</a>
+      <nav class="sidebar__nav">
+        <p class="sidebar__heading">家用扩散模型系列</p>
+        <ul class="sidebar__list">
+{{sidebar_list}}
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="page">
+
+    <nav class="topnav" aria-label="主导航">
+      <a class="topnav__link" href="/">Home</a>
+      <a class="topnav__link is-active" href="/blog/">Blog</a>
+    </nav>
+
+    <header class="hero reveal">
+      <div class="hero__deco" aria-hidden="true">
+        <span class="deco deco--bird">🕊️</span>
+        <span class="deco deco--tea">🍵</span>
+        <span class="deco deco--leaf">🌿</span>
+      </div>
+      <h1 class="hero__name">茶话 · Blog</h1>
+      <p class="hero__tagline">从知乎搬过来的一些长文与杂谈。</p>
+    </header>
+
+    <section class="section reveal" aria-labelledby="posts-title">
+      <h2 id="posts-title" class="section__title"><span>文章</span></h2>
+      <div class="cards">
+        {{posts}}
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>© Mizore · made with 🍵</p>
+    </footer>
+
+  </main>
+
+  <script src="/assets/js/main.js"></script>
+  <script src="/assets/js/blog.js"></script>
+</body>
+
+</html>
