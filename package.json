@@ -1,0 +1,19 @@
+{
+  "name": "yuki-teaparty-blog",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "把知乎专栏迁移成本地 markdown 博客，并编译成套用茶话会主题的静态网页",
+  "scripts": {
+    "migrate": "node tools/zhihu2md.mjs",
+    "build": "node tools/build.mjs"
+  },
+  "devDependencies": {
+    "gray-matter": "^4.0.3",
+    "jsdom": "^25.0.1",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
+  }
+}
