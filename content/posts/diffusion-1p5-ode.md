@@ -4,7 +4,7 @@ date: "2023-07-18 23:36"
 slug: diffusion-1p5-ode
 order: 1.5
 original_url: "https://zhuanlan.zhihu.com/p/643961621"
-summary: "从SDE到ODE关于上一篇的一些补充...为了提醒这是个矩阵，这次用一个大写字母 \\bm{D}(x, t) = \\frac{1}{2}\\bm{G}(x, t)\\bm{G}^T(x, t) 来表示扩散系数。仔细读了读 Score-Based Generative Modeling through Stocha…"
+summary: "在上一期我们速成了SDE，这一期我们要从SDE推导出ODE。"
 source: 知乎专栏
 ---
 ## 从SDE到ODE
@@ -25,7 +25,8 @@ $$
 
 这里SDE中使用原文的符号f和G。
 
-众所周知，ODE的性质那是相当的好——好就好在它是deterministic的，任何X\_0和X\_t都有一一对应的关系，而且有一系列黑箱ODE solver可用。可惜直到上一篇为止，我们讨论的所有东西都是SDE——SDE有个噪声dW，这样就搞得事情很nasty。但现在有一个好消息：
+众所周知，ODE的性质那是相当的好——好就好在ODE是deterministic的，任何X\_0和X\_t都有一一对应的关系，而且有一系列ODE solver可用。
+与此同时，SDE有个噪声dW，因此不是deterministic的，每一步都有随机性。但现在有一个好消息：
 
 对于任意SDE $d\bm{X} = \bm{f}(\bm{X}, t)dt + \bm{G}(\bm{X}, t)d\bm{W}$ ，存在一个ODE $d\bm{X}(t) = \tilde{\bm{f}}(\bm{X}, t)dt$ 使得两个X的概率分布一致。
 
@@ -41,7 +42,7 @@ $$
 d\bm{X} = (\bm{f}(x, t) - \nabla\cdot \bm{D}(x, t) - \bm{D}(x, t)\nabla \log p(x, t))dt + \bm{0}d\bm{W}
 $$
 
-> 注：事实上，根据相同的逻辑，不难构造出一个SDE族 $d\bm{X}(t) = \tilde{\bm{f_{\bm{\sigma}}}}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}$ 使得里面的每个成员都有相同的概率分布——只要少从右边往左边划一些就可以了。
+> 注：事实上，根据相同的逻辑，不难构造出一个SDE族 $d\bm{X}(t) = \tilde{\bm{f_{\bm{\sigma}}}}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}$，使得里面的每个成员都有相同的概率分布——只要少从右边往左边划一些就可以了。
 
 特别的，在扩散模型中， $\bm{G}(x, t) = g(t)$ ，所以 $\nabla \cdot \bm{D}=\bm{0}$ ，于是我们有：
 
@@ -71,7 +72,7 @@ $$
 
 ## Score Function—— $\nabla_{\bf{x}} \log p_t(\bf{x})$
 
-好消息是这个函数不是真正的概率，不需要normalize到1，但是又连续——那当然是用一个NN $\bm{s}_{\bm{\theta}}$ 来估测了。
+好消息是这个函数不是真正的概率，不需要normalize到1，但是又连续——于是一个自然的动机是用一个NN $\bm{s}_{\bm{\theta}}$ 来估测。
 
 于是，这个近似的reverse SDE就会变成：
 
@@ -164,58 +165,45 @@ $$
 
 ![](/assets/img/posts/diffusion-1p5-ode/v2-7550646bf2b5efd53c22b45523d2683d.jpg)
 
-## 后记
+## 如何破除高大上数学名词光环——以Langevin Dynamics为例子
 
-### 鸽子的感想
+Langevin Dynamics是DDPM宣称自己采样背后的数学动机，一听起来就非常高大上。
 
--   写完这一篇之后鸽子才发现，正如Flow-based model虽然大名鼎鼎（Neural ODE当年拿了NeurIPS '18的best paper），但在生产生活中不如GAN和VAE受待见一样，这一套SDE/ODE系统固然也能够高观点的解释很多东西，但其实生产生活中好像也没人用...大家归根结底还是都用离散的版本（笑）。
+Wiki一下可以知道，它的本意是指Langevin方程，aka. ${\displaystyle m{\frac {d\mathbf {v} }{dt}}=-\lambda \mathbf {v} +{\boldsymbol {\eta }}\left(t\right)}$ 的动力学。
 
-> 这不禁让鸽子想起德意志第二帝国20世纪初的著名中学教材《高观点下的初等数学》，也是站得高了看初等内容会变的简单（甚至觉得等自己有孩子了就这么教），但是没什么用。  
-> // 所以德二的军队比较能打确实是有科学依据的...
+然后具体到DDPM，我们知道DDPM离散形式的前向MC是（这里使用DDPM原论文的符号）
 
--   不过本系列的本意就是为了让鸽子自己（以及看这个系列的读者）在读未来的diffusion paper的时候不被各种奇怪的数学名词干晕，这方面感觉目的已经达到了。接下来举一个例子。
+$$\mathbf{x}_i=\sqrt{1-\beta_i}\mathbf{x}_{i-1}+\sqrt{\beta_i}\mathbf{z}_{i-1}$$
 
-### SDE有什么用？——以Langevin Dynamics为例子
+N趋于无穷的时候，把这个东西看成连续的，可以想象成有一个函数 $\beta(\frac{i}{N})=\frac{\beta_i}{N}$ 对每个step都趋于无穷小。
 
--   Langevin Dynamics是在DDPM里突然被Cue的一个术语，用来在DDPM中采样
+所以泰勒展开一下，连续形式的前向SDE是 
 
--   wiki一下可以知道，它的本意是指Langevin方程，aka. ${\displaystyle m{\frac {d\mathbf {v} }{dt}}=-\lambda \mathbf {v} +{\boldsymbol {\eta }}\left(t\right)}$ 的动力学
+$$d\mathbf{x}=-\frac{1}{2}\beta(t)\mathbf{x}dt+\sqrt{\beta(t)}d\bm{W}$$
 
--   然后具体到DDPM，我们知道DDPM离散形式的前向MC是 $\mathbf{x}_i=\sqrt{1-\beta_i}\mathbf{x}_{i-1}+\sqrt{\beta_i}\mathbf{z}_{i-1}$ （这里使用DDPM原论文的符号）
+于是反向SDE是 
 
--   N趋于无穷的时候，把这个东西看成连续的，可以想象成有一个函数 $\beta(\frac{i}{N})=\frac{\beta_i}{N}$ 对每个step都趋于无穷小
--   所以泰勒展开一下，连续形式的前向SDE是 $d\mathbf{x}=-\frac{1}{2}\beta(t)\mathbf{x}dt+\sqrt{\beta(t)}d\bm{W}$
+$$d\mathbf{x}=(-\frac{1}{2}\beta(t)\mathbf{x}-\beta(t)\nabla_{\mathbf{x}} \log p_t(\mathbf{x}))dt+\sqrt{\beta(t)}d\bar{\bm{W}}$$
 
--   于是反向SDE是 $d\mathbf{x}=(-\frac{1}{2}\beta(t)\mathbf{x}-\beta(t)\nabla_{\mathbf{x}} \log p_t(\mathbf{x}))dt+\sqrt{\beta(t)}d\bar{\bm{W}}$
--   然后你再离散回去（注意这里dt是负的），假装对dt做了一个很小的积分
+然后你再离散回去（注意这里dt是负的），假装对dt做了一个很小的积分，于是你形式化的得到
 
--   形式化的得到
+$$\mathbf{x}_{i-1}-\mathbf{x}_i=\frac{1}{2}\beta_i\mathbf{x}_i +\beta_i\bm{s}^*_\theta(\mathbf{x}_i, i)+\sqrt{\beta_i}\mathbf{z}_i$$
 
--   $\mathbf{x}_{i-1}-\mathbf{x}_i=\frac{1}{2}\beta_i\mathbf{x}_i +\beta_i\bm{s}^*_\theta(\mathbf{x}_i, i)+\sqrt{\beta_i}\mathbf{z}_i$
+然后脑补一下反向的泰勒（记住这里beta是无穷小），可以写成
 
--   然后脑补一下反向的泰勒（记住这里beta是无穷小），可以写成
+$$\mathbf{x}_{i-1}=\frac{1}{\sqrt{1-\beta_i}}(\mathbf{x}_i+\beta_i\bm{s}^*_\theta(\mathbf{x}_i, i))+\sqrt{\beta_i}\mathbf{z}_i$$
 
--   $\mathbf{x}_{i-1}=\frac{1}{\sqrt{1-\beta_i}}(\mathbf{x}_i+\beta_i\bm{s}^*_\theta(\mathbf{x}_i, i))+\sqrt{\beta_i}\mathbf{z}_i$
+这就是所谓Langevin Dynamics。这个式子也出现在\[1\]的2.2中, aka.“ancestral sampling”。
 
--   这就是所谓Langevin Dynamics。这个式子也出现在\[1\]的2.2中, aka.“ancestral sampling”。
+到这里就已经和DDPM形式上相当像了。这里和DDPM原文$-\frac{1}{\sqrt{1-\bar{\alpha}_t}}$差了一个系数，这是怎么回事呢？
+这是因为DDPM里算的其实是 $\mathbf{x}_t\left(\mathbf{x}_0, \boldsymbol{\epsilon}\right)=\sqrt{\bar{\alpha}_t} \mathbf{x}_0+\sqrt{1-\bar{\alpha}_t} \boldsymbol{\epsilon}$ 。
+用Gaussian的PDF计算一下，就会发现 $\nabla_{\mathbf{x}} \log p_t(\mathbf{x}_t)=\frac{\nabla_{\mathbf{x}}p_t(\mathbf{x}_t)}{p_t(\mathbf{x}_t)} = ... = -\frac{1}{\sqrt{1-\bar{\alpha}}}\bm{\epsilon}$
 
--   到这里就已经和DDPM形式上相当像了。这里和DDPM原文$-\frac{1}{\sqrt{1-\bar{\alpha}_t}}$差了一个系数，这是怎么回事呢？
+所以两者其实是一码事，也就是说DDPM这里所谓估 $\bm{\epsilon}_\theta$ 其实就是在估测Score Function。
 
--   这是因为DDPM里算的其实是 $\mathbf{x}_t\left(\mathbf{x}_0, \boldsymbol{\epsilon}\right)=\sqrt{\bar{\alpha}_t} \mathbf{x}_0+\sqrt{1-\bar{\alpha}_t} \boldsymbol{\epsilon}$ 。
--   用Gaussian的PDF计算一下，就会发现 $\nabla_{\mathbf{x}} \log p_t(\mathbf{x}_t)=\frac{\nabla_{\mathbf{x}}p_t(\mathbf{x}_t)}{p_t(\mathbf{x}_t)} = ... = -\frac{1}{\sqrt{1-\bar{\alpha}}}\bm{\epsilon}$
--   所以两者其实是一码事，也就是说DDPM这里所谓估 $\bm{\epsilon}_\theta$ 其实就是在估测Score Function。
-
--   题外话，在现实中：
-
+题外话，在现实中：
 -   Langevin Equation的 $-\mathbf{\lambda}\mathbf{v}$ 这一项其实是摩擦力（阻尼，damping），使用KFE立得 $t\to\infty$ 的时候会趋近于一个期望为0，方差随着时间变大的纯Gaussian Noise，整个drift项都被阻尼磨掉了。
 -   如果是overdamping的情况，通常写作 $\lambda \frac{d x}{d t}=-\frac{\partial U(x)}{\partial x}+\eta(t)$ ，最后稳态会得到一个很漂亮的Boltzmann分布，翻译成ML的语言，就是大名鼎鼎的softmax。
-
-### 下期预告
-
-那么从天空落回大地，回到离散的部分，大致下一阶段打算看的内容：
-
--   从DDPM到Latent Diffusion
--   Score Distillation Sampling
 
 ## 参考资料
 

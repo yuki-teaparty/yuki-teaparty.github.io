@@ -5,10 +5,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>家用扩散模型速成 (1)：SDE从入门到弃疗 · Mizore</title>
-  <meta name="description" content="前言扩散模型（Diffusion Model）在这两年十分的热门，CVPR的讲座年年爆满，poster也一年比一年多。但是它的数学比较复xia杂ren，老鸽子的智力一时无法接受（冷知识：家鸽的大脑质量大概只有两克多一点）。 经过一…">
+  <meta name="description" content="论没学过随机过程，也不想看一万个离散概率求和的人应该如何速成扩散模型数学。">
 
   <meta property="og:title" content="家用扩散模型速成 (1)：SDE从入门到弃疗">
-  <meta property="og:description" content="前言扩散模型（Diffusion Model）在这两年十分的热门，CVPR的讲座年年爆满，poster也一年比一年多。但是它的数学比较复xia杂ren，老鸽子的智力一时无法接受（冷知识：家鸽的大脑质量大概只有两克多一点）。 经过一…">
+  <meta property="og:description" content="论没学过随机过程，也不想看一万个离散概率求和的人应该如何速成扩散模型数学。">
   <meta property="og:type" content="article">
 
   <link rel="icon"
@@ -73,42 +73,41 @@
         <h1 class="post__title">家用扩散模型速成 (1)：SDE从入门到弃疗</h1>
         <p class="post__meta">
           <span class="post__date">2023-07-13 00:05</span>
-          <span class="post__sep">·</span>
-          <a class="post__origin" href="https://zhuanlan.zhihu.com/p/641768442" target="_blank" rel="noopener">知乎专栏原文</a>
         </p>
       </header>
 
       <div class="post__body">
-        <h2 id="%E5%89%8D%E8%A8%80" tabindex="-1"><a class="header-anchor" href="#%E5%89%8D%E8%A8%80">前言</a></h2>
-<p>扩散模型（Diffusion Model）在这两年十分的热门，CVPR的讲座年年爆满，poster也一年比一年多。但是它的数学比较复xia杂ren，老鸽子的智力一时无法接受（冷知识：家鸽的大脑质量大概只有两克多一点）。</p>
-<p>经过一段时间的摸索，鸽子大概感受了一下如何在没学过随机过程的情况下快速了解扩散模型，而不需要随机过程随机过。在知乎简单记录一下，希望能帮有缘人少走一些弯路，在大佬们蹦出高科技单词的时候不至于完全懵逼（</p>
-<h2 id="%E4%B8%80%E4%BA%9B%E6%95%B0%E5%AD%A6" tabindex="-1"><a class="header-anchor" href="#%E4%B8%80%E4%BA%9B%E6%95%B0%E5%AD%A6">一些数学</a></h2>
-<p>以下所有过程都非常不严谨，包括我公式也有可能打错（毕竟老鸽子没有上过一天随机过程课）。严谨的推导和证明请看参考资料。需要稍微还记得一点工科数学，包括微积分1，微积分2，线性代数和概率论。</p>
-<p>当然了，这里的介绍还是尽可能想做的比较连续。如果用离散的方式来逼近当然也是可以的，这里推荐一个中文blog：<a href="https://www.kexue.fm/tag/%E6%89%A9%E6%95%A3">科学空间|Scientific Spaces</a>，里面有一系列离散方法来推导这里的大多数东西。</p>
+        <h2 id="%EF%BC%882026%E5%B9%B4%E7%9A%84%EF%BC%89%E5%89%8D%E8%A8%80" tabindex="-1"><a class="header-anchor" href="#%EF%BC%882026%E5%B9%B4%E7%9A%84%EF%BC%89%E5%89%8D%E8%A8%80">（2026年的）前言</a></h2>
+<p>（2023年）入行diffusion的人在点开开山大作DDPM的第一瞬间，会发现里面是一大堆复杂的离散概率来回求和，动不动一整屏幕公式，看起来一个头两个大。</p>
+<p>然而，经过Mizore的研究，发现完全有办法在不学这一大堆离散玩意的情况下搞懂diffusion，因为在连续的语境下其实diffusion还挺优美的——这就是宋飏老师的传奇大作<a href="https://arxiv.org/abs/2011.13456">Score-Based Generative Modeling through Stochastic Differential Equations</a>（ICLR '21），也是“家用扩散模型速成“这个系列的最初动机。</p>
+<p>以下所有过程都非常不严谨——严谨的推导和证明请看参考资料。需要稍微还记得一点工科数学，包括微积分1，微积分2，线性代数和概率论。</p>
+<p>如果想要啃离散大部头，热情推荐<a href="https://www.kexue.fm/tag/%E6%89%A9%E6%95%A3">苏剑林老师的中文blog</a>。喜欢看英文版离散方法的可以看<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/">翁荔老师的blog</a>。</p>
 <h3 id="SDE%E7%9A%84%E5%8A%A8%E6%9C%BA" tabindex="-1"><a class="header-anchor" href="#SDE%E7%9A%84%E5%8A%A8%E6%9C%BA">SDE的动机</a></h3>
-<p>一个传统的，没有噪声的ODE差差不多长这样： \(d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt\)</p>
-<p>然后有个边际条件之后，两头对t积分我们就得到了通解。所以微分形式和积分形式实际上意思也差不多。</p>
-<p>假设我们要加入一个随机噪声 \(\bm{\xi}(t)=\frac{d}{dt}\bm{W}(t)\) ，我们可以依样画葫芦，得到一个stochastic differential equation (SDE)： \(d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\)</p>
+<p>一个传统的，没有噪声的Ordinary Differential Equation（ODE）形式上长这样：</p>
+<div class="math-display">\[d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt\]</div>
+<p>有边际条件之后，两头对t积分我们就得到了通解，所以微分形式和积分形式可以相互转换。</p>
+<p>假设我们要加入一个随机噪声，形式上姑且写作\(\bm{\xi}(t)=\frac{d}{dt}\bm{W}(t)\) ，那么我们可以依样画葫芦，得到一个Stochastic Differential Equation (SDE)：</p>
+<div class="math-display">\[d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\]</div>
 <p>有了SDE+边际条件之后，我们两头对t积分就能得到通解——理论上说是这样，但这里有一些问题需要解决：</p>
 <ul>
-<li>怎样定义噪声dW——我们将会选择Wiener过程（一个更大名鼎鼎的名字是“布朗运动”）</li>
-<li>\(\int_0^{T} \bm{\sigma}d\bm{W}\) 这里对噪声dW——一个随机变量——做积分是什么意思？</li>
+<li>怎样定义噪声dW——在这里我们将会选择Wiener过程（一个更大名鼎鼎的名字是“布朗运动”）</li>
+<li>怎样定义噪声/随机变量的积分\(\int_0^{T} \bm{\sigma}d\bm{W}\) ？</li>
 <li>“这玩意存在/唯一吗”也是个重要问题，但本文一点也不数学，所以这里就不管了。</li>
 </ul>
-<h3 id="Wiener%E8%BF%87%E7%A8%8BW(t)" tabindex="-1"><a class="header-anchor" href="#Wiener%E8%BF%87%E7%A8%8BW(t)">Wiener过程W(t)</a></h3>
-<p>首先考虑1d的情况。1d的W(t)满足如下性质：</p>
+<h3 id="Wiener%E8%BF%87%E7%A8%8B" tabindex="-1"><a class="header-anchor" href="#Wiener%E8%BF%87%E7%A8%8B">Wiener过程 \(W(t)\)</a></h3>
+<p>首先考虑1D的情况。1D的 \(W(t)\) 满足如下性质：</p>
 <ul>
-<li>W(0)=0</li>
-<li>如果t&gt;=s&gt;=0，那么W(t)-W(s)是一个高斯分布N(0, t-s)。这里的动机近似的来自大数定律。</li>
-<li>对一个时间序列，W(t1), W(t2-t1), ... 每一项都是相互独立的——总之这个过程是马尔可夫的。</li>
+<li>\(W(0)=0\)</li>
+<li>如果 \(t \ge s \ge 0\)，那么 \(W(t)-W(s)\) 是一个高斯分布 \(N(0, t-s)\)。这里的动机近似的来自大数定律。</li>
+<li>对一个时间序列，\(W(t_1), W(t_2-t_1), \dots\) 每一项都是相互独立的——总之这个过程是马尔可夫的。</li>
 </ul>
 <p>推论：</p>
 <ul>
-<li>E(W(t))=0, E(W^2(t)) = t</li>
-<li>E(W(t)W(s))=min(s, t)</li>
-<li>事实上W是不可导的，但我们近似的还是有 \(E(\xi(t)\xi(s)) = \delta_0(s-t)\) 。</li>
+<li>\(E(W(t))=0,\quad E(W^2(t)) = t\)</li>
+<li>\(E(W(t)W(s))=\min(s, t)\)</li>
 </ul>
-<p>高维的情况略，总归意思已经传达到了。</p>
+<p>事实上 \(W\) 是不可导的，但我们近似的还是有 \(E(\xi(t)\xi(s)) = \delta_0(s-t)\) 。</p>
+<p>高维的情况类似，总归意思已经传达到了。</p>
 <h3 id="It%C3%B4%E7%A7%AF%E5%88%86" tabindex="-1"><a class="header-anchor" href="#It%C3%B4%E7%A7%AF%E5%88%86">Itô积分 \(\int_0^{T} \bm{G}d\bm{W}\)</a></h3>
 <p>和经典的黎曼积分很像，大致上就是把G拆成很多段，然后求和：</p>
 <div class="math-display">\[\int_0^{T} GdW=\sum_k G_k(W(t_{k+1})-W(t_k))\]</div>
@@ -122,7 +121,7 @@
 <li>\(E(\int_{0}^{T}\bm{G}d\bm{W})=0\)</li>
 <li>\(E(\|\int_{0}^{T}\bm{G}d\bm{W}\|^2)=E(\int_{0}^{T}\|\bm{G}\|^2dt)\)</li>
 </ul>
-<h3 id="It%C3%B4's-Lemma%EF%BC%88%E6%88%96Formula%EF%BC%89" tabindex="-1"><a class="header-anchor" href="#It%C3%B4's-Lemma%EF%BC%88%E6%88%96Formula%EF%BC%89">Itô's Lemma（或Formula）</a></h3>
+<h3 id="%E4%BC%8A%E8%97%A4%E5%BC%95%E7%90%86-It%C3%B4's-Lemma" tabindex="-1"><a class="header-anchor" href="#%E4%BC%8A%E8%97%A4%E5%BC%95%E7%90%86-It%C3%B4's-Lemma">伊藤引理 Itô's Lemma</a></h3>
 <p>\(d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\) 这个式子非常好，因为你对X(t)算mean和var都非常好算。</p>
 <p>但是很多时候式子是关于另一个数u(X, t)的——也就是说我们需要一个链式法则。</p>
 <ul>
@@ -194,8 +193,8 @@
 <p>这就是原文中的3.2 GENERATING SAMPLES BY REVERSING THE SDE。</p>
 <h2 id="%E4%B8%8B%E6%9C%9F%E9%A2%84%E5%91%8A" tabindex="-1"><a class="header-anchor" href="#%E4%B8%8B%E6%9C%9F%E9%A2%84%E5%91%8A">下期预告</a></h2>
 <ul>
-<li>其实SDE还有很多别的用处，不过以后再说了：）</li>
-<li>其实这里推了老半天，和diffusion model基本上没什么关系，感觉作为家用diffusion model的第一篇非常不成功（</li>
+<li>其实SDE还有很多别的用处（比如Black-Scholes Model，大概做金融的人需要努力学SDE），不过和我们diffusion的关系也不大（</li>
+<li>其实这里推了老半天，和diffusion基本上没什么关系，感觉作为家用扩散模型的第一篇非常不成功（</li>
 </ul>
 <h2 id="%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99" tabindex="-1"><a class="header-anchor" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">参考资料</a></h2>
 <h3 id="SDE%E9%83%A8%E5%88%86" tabindex="-1"><a class="header-anchor" href="#SDE%E9%83%A8%E5%88%86">SDE部分</a></h3>
@@ -205,8 +204,6 @@
 <li><a href="https://en.wikipedia.org/wiki/Fokker%E2%80%93Planck_equation">https://en.wikipedia.org/wiki/Fokker%E2%80%93Planck_equation</a></li>
 <li><a href="https://core.ac.uk/download/pdf/82826666.pdf">https://core.ac.uk/download/pdf/82826666.pdf</a></li>
 </ul>
-<h3 id="%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E9%83%A8%E5%88%86" tabindex="-1"><a class="header-anchor" href="#%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E9%83%A8%E5%88%86">扩散模型部分</a></h3>
-<p><a href="https://arxiv.org/abs/2011.13456">Score-Based Generative Modeling through Stochastic Differential Equations</a></p>
 
       </div>
     </article>
@@ -216,7 +213,8 @@
       <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-1p5-ode.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型速成 (1.5)：从SDE到ODE</span></a>
     </nav>
 
-    <footer class="footer">
+    <footer class="footer post__footer">
+      <a class="post__origin" href="https://zhuanlan.zhihu.com/p/641768442" target="_blank" rel="noopener">知乎专栏原文</a>
       <p>© Mizore · made with 🍵</p>
     </footer>
 

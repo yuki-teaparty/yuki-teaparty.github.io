@@ -185,12 +185,11 @@ async function main() {
   const cards = posts
     .map((p) => {
       const excerpt = escapeHtml(makeExcerpt(p.summary));
-      return `        <article class="card">
+      return `        <article class="card card--link">
           <div class="card__head">
             <h3 class="card__title"><a class="card__titlelink" href="/blog/posts/${p.slug}.html">${escapeHtml(p.title)}</a>${p.date ? `<span class="card__date">${escapeHtml(p.date)}</span>` : ''}</h3>
           </div>
           <p class="card__desc">${excerpt}</p>
-          <p class="card__links"><a class="btn" href="/blog/posts/${p.slug}.html">阅读 →</a></p>
         </article>`;
     })
     .join('\n');
