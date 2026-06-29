@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>家用扩散模型速成 (1)：SDE从入门到弃疗 · Mizore</title>
+  <title>家用扩散模型 (1)：SDE从入门到弃疗 · 老鸽子茶话会</title>
   <meta name="description" content="论没学过随机过程，也不想看一万个离散概率求和的人应该如何速成扩散模型数学。">
 
-  <meta property="og:title" content="家用扩散模型速成 (1)：SDE从入门到弃疗">
+  <meta property="og:title" content="家用扩散模型 (1)：SDE从入门到弃疗">
   <meta property="og:description" content="论没学过随机过程，也不想看一万个离散概率求和的人应该如何速成扩散模型数学。">
   <meta property="og:type" content="article">
 
@@ -45,17 +45,17 @@
   <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="文章目录">
     <div class="sidebar__inner">
-      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
         <p class="sidebar__heading">家用扩散模型系列</p>
         <ul class="sidebar__list">
-          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-1-sde.html">家用扩散模型速成 (1)：SDE从入门到弃疗</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型速成 (1.5)：从SDE到ODE</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型速成 (1.7)：2022年的采样算法</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型速成 (2)：Latent Diffusion Model</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">扩散模型囫囵吞枣 (2.2)：Latent Consistency Models</a></li>
+          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
         </ul>
       </nav>
     </div>
@@ -70,7 +70,7 @@
 
     <article class="post reveal">
       <header class="post__header">
-        <h1 class="post__title">家用扩散模型速成 (1)：SDE从入门到弃疗</h1>
+        <h1 class="post__title">家用扩散模型 (1)：SDE从入门到弃疗</h1>
         <p class="post__meta">
           <span class="post__date">2023-07-13 00:05</span>
         </p>
@@ -79,19 +79,19 @@
       <div class="post__body">
         <h2 id="%EF%BC%882026%E5%B9%B4%E7%9A%84%EF%BC%89%E5%89%8D%E8%A8%80" tabindex="-1"><a class="header-anchor" href="#%EF%BC%882026%E5%B9%B4%E7%9A%84%EF%BC%89%E5%89%8D%E8%A8%80">（2026年的）前言</a></h2>
 <p>（2023年）入行diffusion的人在点开开山大作DDPM的第一瞬间，会发现里面是一大堆复杂的离散概率来回求和，动不动一整屏幕公式，看起来一个头两个大。</p>
-<p>然而，经过Mizore的研究，发现完全有办法在不学这一大堆离散玩意的情况下搞懂diffusion，因为在连续的语境下其实diffusion还挺优美的——这就是宋飏老师的传奇大作<a href="https://arxiv.org/abs/2011.13456">Score-Based Generative Modeling through Stochastic Differential Equations</a>（ICLR '21），也是“家用扩散模型速成“这个系列的最初动机。</p>
+<p>然而，经过Mizore的研究，发现完全有办法在不学这一大堆离散玩意的情况下搞懂diffusion，因为在连续的语境下其实diffusion还挺优美的——这就是宋飏老师的传奇大作<a href="https://arxiv.org/abs/2011.13456">Score-Based Generative Modeling through Stochastic Differential Equations</a>（ICLR '21），也是“家用扩散模型“这个系列的最初动机。</p>
 <p>以下所有过程都非常不严谨——严谨的推导和证明请看参考资料。需要稍微还记得一点工科数学，包括微积分1，微积分2，线性代数和概率论。</p>
 <p>如果想要啃离散大部头，热情推荐<a href="https://www.kexue.fm/tag/%E6%89%A9%E6%95%A3">苏剑林老师的中文blog</a>。喜欢看英文版离散方法的可以看<a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/">翁荔老师的blog</a>。</p>
 <h3 id="SDE%E7%9A%84%E5%8A%A8%E6%9C%BA" tabindex="-1"><a class="header-anchor" href="#SDE%E7%9A%84%E5%8A%A8%E6%9C%BA">SDE的动机</a></h3>
 <p>一个传统的，没有噪声的Ordinary Differential Equation（ODE）形式上长这样：</p>
-<div class="math-display">\[d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt\]</div>
+<div class="math-display">\[d\boldsymbol{X}(t) = \boldsymbol{\mu}(\boldsymbol{X}, t)dt\]</div>
 <p>有边际条件之后，两头对t积分我们就得到了通解，所以微分形式和积分形式可以相互转换。</p>
-<p>假设我们要加入一个随机噪声，形式上姑且写作\(\bm{\xi}(t)=\frac{d}{dt}\bm{W}(t)\) ，那么我们可以依样画葫芦，得到一个Stochastic Differential Equation (SDE)：</p>
-<div class="math-display">\[d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\]</div>
+<p>假设我们要加入一个随机噪声，形式上姑且写作\(\boldsymbol{\xi}(t)=\frac{d}{dt}\boldsymbol{W}(t)\) ，那么我们可以依样画葫芦，得到一个Stochastic Differential Equation (SDE)：</p>
+<div class="math-display">\[d\boldsymbol{X}(t) = \boldsymbol{\mu}(\boldsymbol{X}, t)dt + \boldsymbol{\sigma}(\boldsymbol{X}, t)d\boldsymbol{W}\]</div>
 <p>有了SDE+边际条件之后，我们两头对t积分就能得到通解——理论上说是这样，但这里有一些问题需要解决：</p>
 <ul>
 <li>怎样定义噪声dW——在这里我们将会选择Wiener过程（一个更大名鼎鼎的名字是“布朗运动”）</li>
-<li>怎样定义噪声/随机变量的积分\(\int_0^{T} \bm{\sigma}d\bm{W}\) ？</li>
+<li>怎样定义噪声/随机变量的积分\(\int_0^{T} \boldsymbol{\sigma}d\boldsymbol{W}\) ？</li>
 <li>“这玩意存在/唯一吗”也是个重要问题，但本文一点也不数学，所以这里就不管了。</li>
 </ul>
 <h3 id="Wiener%E8%BF%87%E7%A8%8B" tabindex="-1"><a class="header-anchor" href="#Wiener%E8%BF%87%E7%A8%8B">Wiener过程 \(W(t)\)</a></h3>
@@ -108,7 +108,7 @@
 </ul>
 <p>事实上 \(W\) 是不可导的，但我们近似的还是有 \(E(\xi(t)\xi(s)) = \delta_0(s-t)\) 。</p>
 <p>高维的情况类似，总归意思已经传达到了。</p>
-<h3 id="It%C3%B4%E7%A7%AF%E5%88%86" tabindex="-1"><a class="header-anchor" href="#It%C3%B4%E7%A7%AF%E5%88%86">Itô积分 \(\int_0^{T} \bm{G}d\bm{W}\)</a></h3>
+<h3 id="It%C3%B4%E7%A7%AF%E5%88%86" tabindex="-1"><a class="header-anchor" href="#It%C3%B4%E7%A7%AF%E5%88%86">Itô积分 \(\int_0^{T} \boldsymbol{G}d\boldsymbol{W}\)</a></h3>
 <p>和经典的黎曼积分很像，大致上就是把G拆成很多段，然后求和：</p>
 <div class="math-display">\[\int_0^{T} GdW=\sum_k G_k(W(t_{k+1})-W(t_k))\]</div>
 <p>推论：</p>
@@ -118,21 +118,21 @@
 </ul>
 <p>把G和W推广到高维的时候就是简单的做一个内积，类似的有：</p>
 <ul>
-<li>\(E(\int_{0}^{T}\bm{G}d\bm{W})=0\)</li>
-<li>\(E(\|\int_{0}^{T}\bm{G}d\bm{W}\|^2)=E(\int_{0}^{T}\|\bm{G}\|^2dt)\)</li>
+<li>\(E(\int_{0}^{T}\boldsymbol{G}d\boldsymbol{W})=0\)</li>
+<li>\(E(\|\int_{0}^{T}\boldsymbol{G}d\boldsymbol{W}\|^2)=E(\int_{0}^{T}\|\boldsymbol{G}\|^2dt)\)</li>
 </ul>
 <h3 id="%E4%BC%8A%E8%97%A4%E5%BC%95%E7%90%86-It%C3%B4's-Lemma" tabindex="-1"><a class="header-anchor" href="#%E4%BC%8A%E8%97%A4%E5%BC%95%E7%90%86-It%C3%B4's-Lemma">伊藤引理 Itô's Lemma</a></h3>
-<p>\(d\bm{X}(t) = \bm{\mu}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\) 这个式子非常好，因为你对X(t)算mean和var都非常好算。</p>
+<p>\(d\boldsymbol{X}(t) = \boldsymbol{\mu}(\boldsymbol{X}, t)dt + \boldsymbol{\sigma}(\boldsymbol{X}, t)d\boldsymbol{W}\) 这个式子非常好，因为你对X(t)算mean和var都非常好算。</p>
 <p>但是很多时候式子是关于另一个数u(X, t)的——也就是说我们需要一个链式法则。</p>
 <ul>
 <li>Itô product rule: d(X1X2) = X1dX2 + X2dX1 + dX1dX2。</li>
-<li>一般的，对SDE \(d\bm{X}= \bm{b}dt + \bm{G}d\bm{W}\) ，symbolically的有：</li>
+<li>一般的，对SDE \(d\boldsymbol{X}= \boldsymbol{b}dt + \boldsymbol{G}d\boldsymbol{W}\) ，symbolically的有：</li>
 </ul>
-<div class="math-display">\[d(u(\bm{X}, t)) = \frac{\partial u}{\partial t} dt + \sum_i \frac{\partial u}{\partial x_i}  dX^i + \frac{1}{2} \sum_{i, j} \frac{\partial^2 u}{\partial x_i\partial x_j}  dX^idX^j +...\]</div>
+<div class="math-display">\[d(u(\boldsymbol{X}, t)) = \frac{\partial u}{\partial t} dt + \sum_i \frac{\partial u}{\partial x_i}  dX^i + \frac{1}{2} \sum_{i, j} \frac{\partial^2 u}{\partial x_i\partial x_j}  dX^idX^j +...\]</div>
 <p>然后舍弃高阶无穷小（(dW)^2和dt是一个量级，所以比dt更高阶的无穷小都可以扔了）：</p>
 <div class="math-display">\[(dt)^2=0, dtdW^k=0, dW^kdW^l=\delta_{kl}dt\]</div>
 <p>得到的式子就是Itô's Lemma：</p>
-<div class="math-display">\[du(\bm{X}, t) = (\frac{\partial u}{\partial t} + \bm{b}\cdot \nabla u + \frac{1}{2}\bm{G}\bm{G}^T:\nabla^2u)dt + \nabla u\cdot \bm{G}d\bm{W}\]</div>
+<div class="math-display">\[du(\boldsymbol{X}, t) = (\frac{\partial u}{\partial t} + \boldsymbol{b}\cdot \nabla u + \frac{1}{2}\boldsymbol{G}\boldsymbol{G}^T:\nabla^2u)dt + \nabla u\cdot \boldsymbol{G}d\boldsymbol{W}\]</div>
 <p>其中</p>
 <ul>
 <li>\(A:B=\sum_{i, j}A_{ij}B_{ij} = Tr(A^TB)\) 是矩阵内积</li>
@@ -141,55 +141,55 @@
 </ul>
 <h3 id="Kolmogorov-Backward-Equation%E5%92%8CFokker-Planck-Equation" tabindex="-1"><a class="header-anchor" href="#Kolmogorov-Backward-Equation%E5%92%8CFokker-Planck-Equation">Kolmogorov Backward Equation和Fokker-Planck Equation</a></h3>
 <p>// Kolmogorov当年其实同时提出来了两个式子，backward的和forward的，backward的是已知时间t算之前的时间s，forward的是已知时间t算之后的时间s。后来大家发现forward版的版权已经在物理学里被F-P抢注了，所以就只有backward一说。</p>
-<p>对SDE \(d\bm{X}(t) = \bm{b}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\) ：</p>
-<p>我们记infinitesimal generator L，使得 \((\cal{L} f)(x, t) = \bm{b}(x, t)\cdot \nabla f(x)+ \bm{a}(x, t):\nabla^2f(x)\) ，其中 \(\bm{a}= \frac{1}{2}\bm{\sigma}\bm{\sigma}^T\) 。一般来说这里的b叫drift（也记作 \(\mu\) ），而a叫diffusion coefficient。</p>
-<p>首先考虑backward的情况。将伊藤引理的式子两边从时刻s到时刻t积分，然后两边取在X_s=y时刻的期望 \(E^{y,s}[\cdot] = E[\cdot | \bm{X}_s=y]\) ，得到：</p>
-<div class="math-display">\[E^{y, s}[u(\bm{X}_t, t)]-u(y, s) = \int_s^t E^{y, s}[(\partial_r u+ \cal{L}u)(\bm{X}_r, r)]dr\]</div>
+<p>对SDE \(d\boldsymbol{X}(t) = \boldsymbol{b}(\boldsymbol{X}, t)dt + \boldsymbol{\sigma}(\boldsymbol{X}, t)d\boldsymbol{W}\) ：</p>
+<p>我们记infinitesimal generator L，使得 \((\mathcal{L} f)(x, t) = \boldsymbol{b}(x, t)\cdot \nabla f(x)+ \boldsymbol{a}(x, t):\nabla^2f(x)\) ，其中 \(\boldsymbol{a}= \frac{1}{2}\boldsymbol{\sigma}\boldsymbol{\sigma}^T\) 。一般来说这里的b叫drift（也记作 \(\mu\) ），而a叫diffusion coefficient。</p>
+<p>首先考虑backward的情况。将伊藤引理的式子两边从时刻s到时刻t积分，然后两边取在X_s=y时刻的期望 \(E^{y,s}[\cdot] = E[\cdot | \boldsymbol{X}_s=y]\) ，得到：</p>
+<div class="math-display">\[E^{y, s}[u(\boldsymbol{X}_t, t)]-u(y, s) = \int_s^t E^{y, s}[(\partial_r u+ \mathcal{L}u)(\boldsymbol{X}_r, r)]dr\]</div>
 <p>因为是期望，所以dW项就消失了。</p>
-<p>现在考虑 \(u(y, s):=E^{y, s}[f(\bm{X}_t)]=E^{y, s}[u(\bm{X}_t, t)]\) (这是因为此时由定义，u(X_t, t)恒等于f(X_t))——注意此时f是任意函数。两边同取 \(\lim_{t \rightarrow s}{\frac{1}{t-s}}\) (其中t&gt;s)，LHS收敛到0，我们得到</p>
+<p>现在考虑 \(u(y, s):=E^{y, s}[f(\boldsymbol{X}_t)]=E^{y, s}[u(\boldsymbol{X}_t, t)]\) (这是因为此时由定义，u(X_t, t)恒等于f(X_t))——注意此时f是任意函数。两边同取 \(\lim_{t \rightarrow s}{\frac{1}{t-s}}\) (其中t&gt;s)，LHS收敛到0，我们得到</p>
 <ul>
-<li>\(\partial_s u(y, s) + \cal{L}u(y, s) = 0, s&lt;t, u(y, t)= f(y)\) （1）</li>
+<li>\(\partial_s u(y, s) + \mathcal{L}u(y, s) = 0, s&lt;t, u(y, t)= f(y)\) （1）</li>
 </ul>
 <p>记 \(p(x, t|y, s)\) 为转移概率，有 \(u(y, s)=\int f(x)p(t, x|s, y)dx\) ，代入上式，由于f是任意函数，所以我们就消掉了f的积分，从而得到：</p>
 <ul>
-<li>\(\partial_s p + \cal{L}p = 0, s&lt;t, p(x, t|y, t)=\delta(x-y)\) （2）</li>
+<li>\(\partial_s p + \mathcal{L}p = 0, s&lt;t, p(x, t|y, t)=\delta(x-y)\) （2）</li>
 </ul>
 <p>(1)和(2)即为Kolmogorov Backward Equation。</p>
-<p>然后考虑forward的情况。我们取 \(\cal{L}\) 的伴随 \(\cal{L}^*: \langle\cal{L}f, g\rangle=\langle f, \cal{L}^*g\rangle\)</p>
-<p>通过一系列分部积分（详询参考资料），可以得到 \((\cal{L}^* g)(x, t) = -\nabla \cdot (\bm{b}(x, t) g(x)) + \nabla^2: (\bm{a}(x, t) g(x))\)</p>
+<p>然后考虑forward的情况。我们取 \(\mathcal{L}\) 的伴随 \(\mathcal{L}^*: \langle\mathcal{L}f, g\rangle=\langle f, \mathcal{L}^*g\rangle\)</p>
+<p>通过一系列分部积分（详询参考资料），可以得到 \((\mathcal{L}^* g)(x, t) = -\nabla \cdot (\boldsymbol{b}(x, t) g(x)) + \nabla^2: (\boldsymbol{a}(x, t) g(x))\)</p>
 <p>（注意这里g在括号内，和f不同）</p>
 <p>然后用类似的方法，就可以得到正向的Kolmogorov Forward Equation或Fokker-Planck Equation:</p>
 <ul>
-<li>\(\partial_t \rho(x, t) = \cal{L}^*\rho (x, t), t&gt;0, \rho(x, 0)=\rho_0(x)\) （3），这里\rho是t时刻X_t的概率密度。</li>
-<li>\(\partial_t p = \cal{L}^*p, t&gt;0, p(x, s|y,s) =\delta(x-y)\) （4），这里p是p(x, t|y, s)</li>
+<li>\(\partial_t \rho(x, t) = \mathcal{L}^*\rho (x, t), t&gt;0, \rho(x, 0)=\rho_0(x)\) （3），这里\rho是t时刻X_t的概率密度。</li>
+<li>\(\partial_t p = \mathcal{L}^*p, t&gt;0, p(x, s|y,s) =\delta(x-y)\) （4），这里p是p(x, t|y, s)</li>
 </ul>
 <h3 id="Reverse-time-diffusion-equation-models" tabindex="-1"><a class="header-anchor" href="#Reverse-time-diffusion-equation-models">Reverse-time diffusion equation models</a></h3>
 <p>我们把KBE（2）倒着写（也就是取反向的s&gt;t，对t求导数）</p>
-<div class="math-display">\[-\partial_t p(y, s|x, t) = \bm{b}(x, t)\cdot \nabla p(y, s|x, t)+ \bm{a}(x, t):\nabla^2 p(y, s|x, t)\]</div>
-<p>然后KFE（3）告诉我们 \(-\partial_t p(x, t) = \nabla \cdot (\bm{b}(x, t) p(x, t)) - \nabla^2: (\bm{a}(x, t) p(x, t))\)，t&gt;0 。</p>
+<div class="math-display">\[-\partial_t p(y, s|x, t) = \boldsymbol{b}(x, t)\cdot \nabla p(y, s|x, t)+ \boldsymbol{a}(x, t):\nabla^2 p(y, s|x, t)\]</div>
+<p>然后KFE（3）告诉我们 \(-\partial_t p(x, t) = \nabla \cdot (\boldsymbol{b}(x, t) p(x, t)) - \nabla^2: (\boldsymbol{a}(x, t) p(x, t))\)，t&gt;0 。</p>
 <p>又， \(p(x, t, y, s) = p(y, s|x, t)p(x, t)\) ，这三个式子联立，只留下p(x, t, y, s)，我们得到：</p>
-<p>\(-\partial_t p(x, t, y, s) = \nabla \cdot (\overline{\bm{b}}(x, t) p(x, t, y, s)) - \nabla^2 : (\bm{a}(x, t)p(x, t, y, s))\) （5）</p>
-<p>其中 \(\overline{\bm{b}^i}=\bm{b}^i - \frac{2}{p(x, t)}\nabla\cdot (p(x, t)\bm{a}^i)\) ，这里 \(\bm{a}^i\) 是a的第i行， \(\bm{b}^i\) 是b的第i个元素。</p>
+<p>\(-\partial_t p(x, t, y, s) = \nabla \cdot (\overline{\boldsymbol{b}}(x, t) p(x, t, y, s)) - \nabla^2 : (\boldsymbol{a}(x, t)p(x, t, y, s))\) （5）</p>
+<p>其中 \(\overline{\boldsymbol{b}^i}=\boldsymbol{b}^i - \frac{2}{p(x, t)}\nabla\cdot (p(x, t)\boldsymbol{a}^i)\) ，这里 \(\boldsymbol{a}^i\) 是a的第i行， \(\boldsymbol{b}^i\) 是b的第i个元素。</p>
 <blockquote>
 <p>大致的思路：记 \(p_1=p(y, s|x, t), p_2=p(x, t)\)<br>
-由梯度的运算法则，有 \(\nabla \cdot(p_1p_2\bm{b})=p_2\bm{b}\cdot \nabla p_1 + p_1\nabla \cdot(p_2\bm{b})\)<br>
+由梯度的运算法则，有 \(\nabla \cdot(p_1p_2\boldsymbol{b})=p_2\boldsymbol{b}\cdot \nabla p_1 + p_1\nabla \cdot(p_2\boldsymbol{b})\)<br>
 按矩阵内积的定义展开，有<br>
-\(\nabla^2: (p_1p_2\bm{a}) = p_2\bm{a}:\nabla^2 p_1 + 2\sum_i \frac{\partial}{\partial_{x_i}}(p_1\nabla\cdot (p_2\bm{a}^i)) - p_1\nabla^2:(p_2\bm{a})\)<br>
+\(\nabla^2: (p_1p_2\boldsymbol{a}) = p_2\boldsymbol{a}:\nabla^2 p_1 + 2\sum_i \frac{\partial}{\partial_{x_i}}(p_1\nabla\cdot (p_2\boldsymbol{a}^i)) - p_1\nabla^2:(p_2\boldsymbol{a})\)<br>
 所以<br>
-\(-\partial_t(p_1p_2) = -p_2\partial_tp_1-p_1\partial_tp_2 = p_2\bm{b}\cdot \nabla p_1 + p_2\bm{a}:\nabla^2p_1 + p_1\nabla \cdot (p_2\bm{b})-p_1\nabla^2 : (p_2\bm{a})\)<br>
+\(-\partial_t(p_1p_2) = -p_2\partial_tp_1-p_1\partial_tp_2 = p_2\boldsymbol{b}\cdot \nabla p_1 + p_2\boldsymbol{a}:\nabla^2p_1 + p_1\nabla \cdot (p_2\boldsymbol{b})-p_1\nabla^2 : (p_2\boldsymbol{a})\)<br>
 化简一下就得到（5）。</p>
 </blockquote>
 <p>那么好了，（5）是不是看着很眼熟呢？</p>
 <p>对啦，（5）长得和（3）形式上一模一样，实际上它就是以下反向过程SDE的KFE：</p>
-<div class="math-display">\[d\bm{X}(t) = \overline{\bm{b}}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\overline{\bm{W}}\]</div>
-<p>这里 \(d\overline{\bm{W}}=d\bm{W}+\frac{1}{p(\bm{X_t},t)}\nabla\cdot (p(\bm{X_t}, t)\bm{\sigma}^i(\bm{X_t}, t))dt\)</p>
+<div class="math-display">\[d\boldsymbol{X}(t) = \overline{\boldsymbol{b}}(\boldsymbol{X}, t)dt + \boldsymbol{\sigma}(\boldsymbol{X}, t)d\overline{\boldsymbol{W}}\]</div>
+<p>这里 \(d\overline{\boldsymbol{W}}=d\boldsymbol{W}+\frac{1}{p(\boldsymbol{X_t},t)}\nabla\cdot (p(\boldsymbol{X_t}, t)\boldsymbol{\sigma}^i(\boldsymbol{X_t}, t))dt\)</p>
 <h2 id="%E4%BD%A0%E8%AF%B4%E5%BE%97%E5%AF%B9%EF%BC%8C%E4%BD%86%E6%98%AF%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%98%AF%E7%94%B1..." tabindex="-1"><a class="header-anchor" href="#%E4%BD%A0%E8%AF%B4%E5%BE%97%E5%AF%B9%EF%BC%8C%E4%BD%86%E6%98%AF%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%98%AF%E7%94%B1...">你说得对，但是扩散模型是由...</a></h2>
 <p>现在我们回到扩散模型。根据原文，正向过程的方差是个和X无关的函数，它的SDE是：</p>
-<div class="math-display">\[d\bm{X}(t) = \bm{f}(\bm{X}, t)dt +g(t)d\bm{W}\]</div>
+<div class="math-display">\[d\boldsymbol{X}(t) = \boldsymbol{f}(\boldsymbol{X}, t)dt +g(t)d\boldsymbol{W}\]</div>
 <p>所以反向过程SDE是：</p>
-<div class="math-display">\[d\bm{X}(t) = \overline{\bm{f}}(\bm{X}, t)dt + g(t)d\overline{\bm{W}}\]</div>
-<p>其中 \(\overline{\bm{f}^i}=\bm{f}^i - \frac{1}{p(\bm{X}_t, t)}\frac{\partial}{\partial x_i}(p(\bm{X}_t, t)g^2(t))\)</p>
-<p>化简一下这个式子，就得到 \(\overline{\bm{f}}=\bm{f} - \nabla (g^2(t)\log p(\bm{X}_t, t))\)</p>
+<div class="math-display">\[d\boldsymbol{X}(t) = \overline{\boldsymbol{f}}(\boldsymbol{X}, t)dt + g(t)d\overline{\boldsymbol{W}}\]</div>
+<p>其中 \(\overline{\boldsymbol{f}^i}=\boldsymbol{f}^i - \frac{1}{p(\boldsymbol{X}_t, t)}\frac{\partial}{\partial x_i}(p(\boldsymbol{X}_t, t)g^2(t))\)</p>
+<p>化简一下这个式子，就得到 \(\overline{\boldsymbol{f}}=\boldsymbol{f} - \nabla (g^2(t)\log p(\boldsymbol{X}_t, t))\)</p>
 <p>这就是原文中的3.2 GENERATING SAMPLES BY REVERSING THE SDE。</p>
 <h2 id="%E4%B8%8B%E6%9C%9F%E9%A2%84%E5%91%8A" tabindex="-1"><a class="header-anchor" href="#%E4%B8%8B%E6%9C%9F%E9%A2%84%E5%91%8A">下期预告</a></h2>
 <ul>
@@ -210,12 +210,12 @@
 
     <nav class="post-nav-bottom">
       <span></span>
-      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-1p5-ode.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型速成 (1.5)：从SDE到ODE</span></a>
+      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-1p5-ode.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型 (1.5)：从SDE到ODE</span></a>
     </nav>
 
     <footer class="footer post__footer">
       <a class="post__origin" href="https://zhuanlan.zhihu.com/p/641768442" target="_blank" rel="noopener">知乎专栏原文</a>
-      <p>© Mizore · made with 🍵</p>
+      <p>© 老鸽子茶话会 · made with 🍵</p>
     </footer>
 
   </main>

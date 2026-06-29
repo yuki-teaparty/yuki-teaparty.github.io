@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>家用扩散模型速成 (1.7)：2022年的采样算法 · Mizore</title>
+  <title>家用扩散模型 (1.7)：2022年的采样算法 · 老鸽子茶话会</title>
   <meta name="description" content="一些2022年常用的采样算法，包括DPM-solver++和EDM">
 
-  <meta property="og:title" content="家用扩散模型速成 (1.7)：2022年的采样算法">
+  <meta property="og:title" content="家用扩散模型 (1.7)：2022年的采样算法">
   <meta property="og:description" content="一些2022年常用的采样算法，包括DPM-solver++和EDM">
   <meta property="og:type" content="article">
 
@@ -45,17 +45,17 @@
   <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="文章目录">
     <div class="sidebar__inner">
-      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
         <p class="sidebar__heading">家用扩散模型系列</p>
         <ul class="sidebar__list">
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型速成 (1)：SDE从入门到弃疗</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型速成 (1.5)：从SDE到ODE</a></li>
-          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型速成 (1.7)：2022年的采样算法</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型速成 (2)：Latent Diffusion Model</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">扩散模型囫囵吞枣 (2.2)：Latent Consistency Models</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
         </ul>
       </nav>
     </div>
@@ -70,7 +70,7 @@
 
     <article class="post reveal">
       <header class="post__header">
-        <h1 class="post__title">家用扩散模型速成 (1.7)：2022年的采样算法</h1>
+        <h1 class="post__title">家用扩散模型 (1.7)：2022年的采样算法</h1>
         <p class="post__meta">
           <span class="post__date">2023-07-30 17:54</span>
         </p>
@@ -81,13 +81,13 @@
 <p>本文介绍一些2022年常用的采样算法，包括DPM-solver++[2][3]和EDM[1]，都是2022年的论文。</p>
 <p>这里有一个（2022年）Stable Diffusion上常用sampler原理和效果比对的文章：  <a href="https://stable-diffusion-art.com/samplers/">Stable Diffusion Samplers: A Comprehensive Guide</a></p>
 <h2 id="%E8%BD%AC%E7%A7%BB%E6%A6%82%E7%8E%87%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8BSDE%E9%87%8C%E7%9A%84f(x%2C-t)%E7%9A%84%E9%80%89%E5%8F%96%E4%B8%80%E8%88%AC%E5%AF%B9x%E6%98%AF%E7%BA%BF%E6%80%A7%E7%9A%84%EF%BC%9F" tabindex="-1"><a class="header-anchor" href="#%E8%BD%AC%E7%A7%BB%E6%A6%82%E7%8E%87%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8BSDE%E9%87%8C%E7%9A%84f(x%2C-t)%E7%9A%84%E9%80%89%E5%8F%96%E4%B8%80%E8%88%AC%E5%AF%B9x%E6%98%AF%E7%BA%BF%E6%80%A7%E7%9A%84%EF%BC%9F">转移概率：为什么扩散模型SDE里的f(x, t)的选取一般对x是线性的？</a></h2>
-<p>在<a href="https://zhuanlan.zhihu.com/p/643961621">上一期</a>中我们提过，为了让 \(p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right)\) 是Gaussian，我们的f其实一般选择是线性的。</p>
+<p>在<a href="/blog/posts/diffusion-1p5-ode.html">上一期</a>中我们提过，为了让 \(p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right)\) 是Gaussian，我们的f其实一般选择是线性的。</p>
 <p>为什么呢？如果我们有一个线性的f：</p>
 <div class="math-display">\[d\mathbf{x} = f(t)\mathbf{x}dt + g(t)d\mathbf{w}\]</div>
 <p>记（这个符号来自[1]）</p>
 <div class="math-display">\[s(t)=\exp \left(\int_0^t f(\xi) \mathrm{d} \xi\right), \sigma^2(t)=\int_0^t \frac{g(\xi)^2}{s(\xi)^2} \mathrm{~d} \xi\]</div>
 <p>我们有</p>
-<div class="math-display">\[p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \cal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})\]</div>
+<div class="math-display">\[p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \mathcal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})\]</div>
 <p>即服从高斯分布。</p>
 <blockquote>
 <p>事实上，这是名为Linear SDE的一大类SDE，这一类SDE都有解析解。<br>
@@ -98,57 +98,57 @@
 </blockquote>
 <h2 id="DPM-solver%5B2%5D-%2F-DPM-solver%2B%2B-%5B3%5D" tabindex="-1"><a class="header-anchor" href="#DPM-solver%5B2%5D-%2F-DPM-solver%2B%2B-%5B3%5D">DPM-solver[2] / DPM-solver++ [3]</a></h2>
 <p>以下使用DPM系列的符号：</p>
-<div class="math-display">\[p_{0 t}\left(\bm{x}_t \mid \bm{x}_0\right) \sim \cal{N}(\alpha_t\bm{x}_0, \sigma^2_t\mathbf{I})\]</div>
-<p>翻译成人话： \(\bm{x}_t=\alpha(t)\bm{x}_0+\sigma(t)\bm{\epsilon}\) ， \(\bm{\epsilon}\) 是单位高斯噪声。</p>
-<p>使用类似DDPM的方式（详见上一期），可以用一个nn \(\bm{\epsilon}_\theta(\bm{x}_t, t)\) 来从 \(\bm{x}_t\) 预测 \(\bm{x}_0\sim \bm{x}_\theta:=\frac{1}{\alpha_t}(\bm{x}_t-\sigma_t\bm{\epsilon}_\theta(\bm{x}_t, t))\) ——某种意义上可以认为这个nn在预测噪声 \(\bm{\epsilon}\) 。可以推导出，这种情况下我们有</p>
-<div class="math-display">\[\bm{\epsilon}_\theta(\bm{x}_t, t)=-\sigma_t\nabla_{\bm{x}}\log q_t(\bm{x}_t)\]</div>
+<div class="math-display">\[p_{0 t}\left(\boldsymbol{x}_t \mid \boldsymbol{x}_0\right) \sim \mathcal{N}(\alpha_t\boldsymbol{x}_0, \sigma^2_t\mathbf{I})\]</div>
+<p>翻译成人话： \(\boldsymbol{x}_t=\alpha(t)\boldsymbol{x}_0+\sigma(t)\boldsymbol{\epsilon}\) ， \(\boldsymbol{\epsilon}\) 是单位高斯噪声。</p>
+<p>使用类似DDPM的方式（详见上一期），可以用一个nn \(\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t)\) 来从 \(\boldsymbol{x}_t\) 预测 \(\boldsymbol{x}_0\sim \boldsymbol{x}_\theta:=\frac{1}{\alpha_t}(\boldsymbol{x}_t-\sigma_t\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t))\) ——某种意义上可以认为这个nn在预测噪声 \(\boldsymbol{\epsilon}\) 。可以推导出，这种情况下我们有</p>
+<div class="math-display">\[\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t)=-\sigma_t\nabla_{\boldsymbol{x}}\log q_t(\boldsymbol{x}_t)\]</div>
 <p>（可以记住这个漂亮的结论）</p>
 <h3 id="%E6%97%A2%E7%84%B6%E8%BF%99%E4%B8%AA%E8%BD%AC%E7%A7%BB%E6%A6%82%E7%8E%87%E7%9A%84closed-form%E5%AF%B9f%E5%92%8Cg%E8%BF%99%E4%B9%88%E4%B8%91%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B9%B2%E8%84%86%E5%88%AB%E7%94%A8f%E5%92%8Cg%E4%BA%86%E5%90%A7%EF%BC%81" tabindex="-1"><a class="header-anchor" href="#%E6%97%A2%E7%84%B6%E8%BF%99%E4%B8%AA%E8%BD%AC%E7%A7%BB%E6%A6%82%E7%8E%87%E7%9A%84closed-form%E5%AF%B9f%E5%92%8Cg%E8%BF%99%E4%B9%88%E4%B8%91%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B9%B2%E8%84%86%E5%88%AB%E7%94%A8f%E5%92%8Cg%E4%BA%86%E5%90%A7%EF%BC%81">既然这个转移概率的closed form对f和g这么丑，我们干脆别用f和g了吧！</a></h3>
 <p>我们有</p>
 <div class="math-display">\[f(t)=\frac{d}{dt}\log\alpha_t, g^2(t)=\frac{d}{dt}\sigma^2_t-2\sigma_t^2\frac{d}{dt}\log\alpha_t\]</div>
 <h3 id="%E9%82%A3%E4%B9%88%EF%BC%8CLoss%E5%91%A2%EF%BC%9F" tabindex="-1"><a class="header-anchor" href="#%E9%82%A3%E4%B9%88%EF%BC%8CLoss%E5%91%A2%EF%BC%9F">那么，Loss呢？</a></h3>
 <p>按上一期的式子化简一下，把系数提出去，可以写成</p>
-<div class="math-display">\[\mathcal{J}_{\mathrm{DSM}}(\boldsymbol{\theta} ; \omega(\cdot)):=\frac{1}{2} \int_0^T \mathbb{E}_{q_0(\bm{x}_0), q(\bm{\epsilon})}\left[\omega(t)\left\|\bm{\epsilon}_\theta(\bm{x}_t, t) - \bm{\epsilon}\right\|_2^2\right] \mathrm{d} t\]</div>
+<div class="math-display">\[\mathcal{J}_{\mathrm{DSM}}(\boldsymbol{\theta} ; \omega(\cdot)):=\frac{1}{2} \int_0^T \mathbb{E}_{q_0(\boldsymbol{x}_0), q(\boldsymbol{\epsilon})}\left[\omega(t)\left\|\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t) - \boldsymbol{\epsilon}\right\|_2^2\right] \mathrm{d} t\]</div>
 <h3 id="%E5%AF%B9%E5%BA%94%E7%9A%84ODE%EF%BC%8C%E5%8F%8A%E5%85%B6%E8%A7%A3%E6%B3%95" tabindex="-1"><a class="header-anchor" href="#%E5%AF%B9%E5%BA%94%E7%9A%84ODE%EF%BC%8C%E5%8F%8A%E5%85%B6%E8%A7%A3%E6%B3%95">对应的ODE，及其解法</a></h3>
 <p>按上一期的式子化简一下，有</p>
-<div class="math-display">\[\frac{d}{dt}\bm{x}_t = f(t)\bm{x}_t+\frac{g^2(t)}{2\sigma_t}\bm{\epsilon}_\theta(\bm{x}_t, t)\]</div>
+<div class="math-display">\[\frac{d}{dt}\boldsymbol{x}_t = f(t)\boldsymbol{x}_t+\frac{g^2(t)}{2\sigma_t}\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t)\]</div>
 <p>把f和g用 \(\alpha\) 和 \(\sigma\) 代入，经过一通操作（详见[2]），我们得到一个精确的表达式：</p>
-<div class="math-display">\[\bm{x}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\bm{x}_{s}-\alpha_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\bm{\epsilon}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]\]</div>
+<div class="math-display">\[\boldsymbol{x}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\boldsymbol{x}_{s}-\alpha_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\boldsymbol{\epsilon}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]\]</div>
 <p>（式3.5，[2] / 式7，[3]）</p>
 <p>这个式子看起来可能有点怪，但其实可以写成这样：</p>
-<div class="math-display">\[\frac{\bm{x}_{s}}{\alpha_{s}}-\frac{\bm{x}_{t}}{\alpha_t}=\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\bm{\epsilon}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda\]</div>
+<div class="math-display">\[\frac{\boldsymbol{x}_{s}}{\alpha_{s}}-\frac{\boldsymbol{x}_{t}}{\alpha_t}=\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\boldsymbol{\epsilon}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda\]</div>
 <p>是不是就看起来像一个ODE的差分形式了。</p>
 <p>其中，\(\lambda_t:=\log\frac{\alpha_t}{\sigma_t}\) 是信噪比（SNR）的对数（如果经常读diffusion论文，会发现SNR也是一个经常出现的名词），\(\hat{(\cdot)}\) 是将对t的函数变换为对 \(\lambda\) 的函数（ \(\lambda\) 是严格单调递减的，所以存在一个反函数）。</p>
 <p>如果t和s足够接近，我们可以把这项积分项泰勒展开（对 \(\lambda\) 求n阶导），从而求出一个近似值。例如，一阶近似（记作DPM-solver-1）是</p>
-<div class="math-display">\[\tilde{\bm{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\bm{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s) + \mathcal{O}((\lambda_t-\lambda_s)^2)\]</div>
+<div class="math-display">\[\tilde{\boldsymbol{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\boldsymbol{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s) + \mathcal{O}((\lambda_t-\lambda_s)^2)\]</div>
 <blockquote>
 <p>这个实际上在ODE里叫<a href="https://en.wikipedia.org/wiki/Euler_method">Euler法</a>。</p>
 </blockquote>
 <p>通过类似的方式可以得到二阶近似，记作DPM-solver-2。</p>
 <p>但[3]中作者们发现直接二阶展开上式有些数值不稳定，所以他们变换了一下形式（式8, [3])：</p>
-<div class="math-display">\[\bm{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\bm{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\bm{x}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]\]</div>
-<p>注意这里用了 \(\bm{x}_\theta:=\frac{1}{\alpha_t}(\bm{x}_t-\sigma_t\bm{\epsilon}_\theta)\)，以及\(\alpha\) 换成了 \(\sigma\)。</p>
+<div class="math-display">\[\boldsymbol{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\boldsymbol{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\boldsymbol{x}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]\]</div>
+<p>注意这里用了 \(\boldsymbol{x}_\theta:=\frac{1}{\alpha_t}(\boldsymbol{x}_t-\sigma_t\boldsymbol{\epsilon}_\theta)\)，以及\(\alpha\) 换成了 \(\sigma\)。</p>
 <p>这个式子的一阶展开依然是一样的（DDIM），但二阶展开有一些区别，记作DPM++2。</p>
 <p>[3]中提出了2S和2M两种二阶方法（S代表single step，M代表multi step），细节总归不本质，但总之大家都用DPM++ 2M就完了。</p>
 <p>当然，既然有ODE版，肯定也有SDE（Ancestral Sampling）版，详见[3]。</p>
 <h3 id="%E5%92%8CDDIM%E7%9A%84%E8%81%94%E7%B3%BB" tabindex="-1"><a class="header-anchor" href="#%E5%92%8CDDIM%E7%9A%84%E8%81%94%E7%B3%BB">和DDIM的联系</a></h3>
 <p>作者指出，实际上DDIM的SDE形式就是SDE-DPM-Solver++1，而ODE形式就是DPM-Solver-1。</p>
 <blockquote>
-<p>这也和Stable Diffusion的官方指南相吻合——他们推荐的SDE sampler正是DDIM或DPM++ SDE(2M)，而ODE sampler的推荐是DPM++ 2M，也就是说，不管怎么样，他们总归推荐的正是 \(\bm{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\bm{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\bm{x}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda\) 的某种一阶或二阶近似。</p>
+<p>这也和Stable Diffusion的官方指南相吻合——他们推荐的SDE sampler正是DDIM或DPM++ SDE(2M)，而ODE sampler的推荐是DPM++ 2M，也就是说，不管怎么样，他们总归推荐的正是 \(\boldsymbol{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\boldsymbol{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\boldsymbol{x}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda\) 的某种一阶或二阶近似。</p>
 </blockquote>
 <p>如果一时半会儿看不出来两者的联系，可以注意到DPM-Solver-1</p>
-<div class="math-display">\[\tilde{\bm{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\bm{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s)\]</div>
+<div class="math-display">\[\tilde{\boldsymbol{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\boldsymbol{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s)\]</div>
 <p>事实上可以被写成</p>
-<div class="math-display">\[\tilde{\bm{x}}_{t}=\alpha_{t}\bm{x}_{\theta}(\tilde{\bm{x}}_s,s) + \sigma_{t}  \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s)\]</div>
-<p>这样一看就看的很明显，DDIM是Final image + Direction + Noise的组合，显然第一项是final image，第二项是direction（别忘了\(\sigma_{t}\bm{\epsilon}_{\theta}\)其实是score function）。</p>
+<div class="math-display">\[\tilde{\boldsymbol{x}}_{t}=\alpha_{t}\boldsymbol{x}_{\theta}(\tilde{\boldsymbol{x}}_s,s) + \sigma_{t}  \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s)\]</div>
+<p>这样一看就看的很明显，DDIM是Final image + Direction + Noise的组合，显然第一项是final image，第二项是direction（别忘了\(\sigma_{t}\boldsymbol{\epsilon}_{\theta}\)其实是score function）。</p>
 <p>然后Ancestral版是</p>
-<div class="math-display">\[\tilde{\bm{x}}_{t}=\alpha_{t}\bm{x}_{\theta}(\tilde{\bm{x}}_s,s) + \sqrt{\sigma_{t}^2-\eta^2} \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s) +\eta \bm{z}_{s}\]</div>
+<div class="math-display">\[\tilde{\boldsymbol{x}}_{t}=\alpha_{t}\boldsymbol{x}_{\theta}(\tilde{\boldsymbol{x}}_s,s) + \sqrt{\sigma_{t}^2-\eta^2} \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s) +\eta \boldsymbol{z}_{s}\]</div>
 <p>这个 \(\eta\) 项是怎么来的呢？回忆一下我们在上一期里是怎么从SDE推出ODE的，少划一些noise过去就立得这个SDE族。</p>
 <h3 id="%E8%99%BD%E7%84%B6%E4%BD%86%E6%98%AF%EF%BC%8CDDIM%E5%88%B0%E5%BA%95%E6%AF%94DDPM%E5%8A%A0%E9%80%9F%E5%9C%A8%E5%93%AA%E9%87%8C%E5%91%A2%EF%BC%9F" tabindex="-1"><a class="header-anchor" href="#%E8%99%BD%E7%84%B6%E4%BD%86%E6%98%AF%EF%BC%8CDDIM%E5%88%B0%E5%BA%95%E6%AF%94DDPM%E5%8A%A0%E9%80%9F%E5%9C%A8%E5%93%AA%E9%87%8C%E5%91%A2%EF%BC%9F">虽然但是，DDIM到底比DDPM加速在哪里呢？</a></h3>
 <p>按照DDPM的那一套，你正向多少步就得反向多少步。DDIM里全程就不依赖正向过程（可以想象为对那个积分方程泰勒展开，当然中间的断点可以随便取啦），所以反向步数可以取得相当少。</p>
 <h2 id="EDM%5B1%5D" tabindex="-1"><a class="header-anchor" href="#EDM%5B1%5D">EDM[1]</a></h2>
 <p>以下使用EDM的符号：</p>
-<div class="math-display">\[p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \cal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})\]</div>
+<div class="math-display">\[p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \mathcal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})\]</div>
 <h3 id="%E6%97%A2%E7%84%B6%E8%BF%99%E4%B8%AA%E8%BD%AC%E7%A7%BB%E6%A6%82%E7%8E%87%E7%9A%84closed-form%E5%AF%B9f%E5%92%8Cg%E8%BF%99%E4%B9%88%E4%B8%91%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B9%B2%E8%84%86%E5%88%AB%E7%94%A8f%E5%92%8Cg%E4%BA%86%E5%90%A7%EF%BC%81%EF%BC%88%E5%BC%82-%E6%9B%B2-%E5%90%8C-%E5%B7%A5%EF%BC%89" tabindex="-1"><a class="header-anchor" href="#%E6%97%A2%E7%84%B6%E8%BF%99%E4%B8%AA%E8%BD%AC%E7%A7%BB%E6%A6%82%E7%8E%87%E7%9A%84closed-form%E5%AF%B9f%E5%92%8Cg%E8%BF%99%E4%B9%88%E4%B8%91%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B9%B2%E8%84%86%E5%88%AB%E7%94%A8f%E5%92%8Cg%E4%BA%86%E5%90%A7%EF%BC%81%EF%BC%88%E5%BC%82-%E6%9B%B2-%E5%90%8C-%E5%B7%A5%EF%BC%89">既然这个转移概率的closed form对f和g这么丑，我们干脆别用f和g了吧！（异 曲 同 工）</a></h3>
 <p>我们有</p>
 <div class="math-display">\[f(t)=\dot{s}(t)/s(t), g(t)=s(t)\sqrt{2\dot{\sigma}(t)\sigma(t)}\]</div>
@@ -167,10 +167,7 @@
 <h3 id="%E5%AF%B9%E5%BA%94%E7%9A%84ODE%EF%BC%8C%E5%8F%8A%E5%85%B6%E8%A7%A3%E6%B3%95-1" tabindex="-1"><a class="header-anchor" href="#%E5%AF%B9%E5%BA%94%E7%9A%84ODE%EF%BC%8C%E5%8F%8A%E5%85%B6%E8%A7%A3%E6%B3%95-1">对应的ODE，及其解法</a></h3>
 <p>通过一些不太有趣的计算，对应的ODE为</p>
 <div class="math-display">\[\frac{\mathrm{d}x}{\mathrm{d}t}=\biggl(\frac{\dot{\sigma}(t)}{\sigma(t)}+\frac{\dot{s}(t)}{s(t)}\biggr)x-\frac{\dot{\sigma}(t)s(t)}{\sigma(t)}D_{\theta}\biggl(\frac{x}{s(t)};\sigma(t)\biggr)\]</div>
-<p>然后就可以抓一个二阶方法来解了（Heun）——当然鸽子懂个hammer的二阶方法，这里就不照着稿子念了。</p>
-<blockquote>
-<p>虽然但是，据Stable Diffusion的介绍，Heun似乎比较慢，所以大概也许不是很推荐（</p>
-</blockquote>
+<p>然后就可以抓一个二阶方法来解了（Heun）。虽然但是，据Stable Diffusion的介绍，Heun似乎比较慢，所以大概也许不是很推荐（</p>
 <h3 id="%E4%B8%80%E4%BA%9B%E5%B8%B8%E8%A7%81%E7%9A%84%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AF%B9%E5%BA%94%E7%9A%84-%E7%9A%84%E5%8F%96%E5%80%BC" tabindex="-1"><a class="header-anchor" href="#%E4%B8%80%E4%BA%9B%E5%B8%B8%E8%A7%81%E7%9A%84%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E5%AF%B9%E5%BA%94%E7%9A%84-%E7%9A%84%E5%8F%96%E5%80%BC">一些常见的扩散模型对应的 \(\sigma\) 的取值</a></h3>
 <p><img src="/assets/img/posts/diffusion-1p7-samplers/v2-28dc0af39cb126ff8d6b4f6829bb714d.jpg" alt=""></p>
 <h2 id="%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99" tabindex="-1"><a class="header-anchor" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">参考资料</a></h2>
@@ -184,13 +181,13 @@
     </article>
 
     <nav class="post-nav-bottom">
-      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-1p5-ode.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型速成 (1.5)：从SDE到ODE</span></a>
-      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-2-ldm.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型速成 (2)：Latent Diffusion Model</span></a>
+      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-1p5-ode.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型 (1.5)：从SDE到ODE</span></a>
+      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-2-ldm.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型 (2)：Latent Diffusion Model</span></a>
     </nav>
 
     <footer class="footer post__footer">
       <a class="post__origin" href="https://zhuanlan.zhihu.com/p/645971110" target="_blank" rel="noopener">知乎专栏原文</a>
-      <p>© Mizore · made with 🍵</p>
+      <p>© 老鸽子茶话会 · made with 🍵</p>
     </footer>
 
   </main>

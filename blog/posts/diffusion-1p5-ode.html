@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>家用扩散模型速成 (1.5)：从SDE到ODE · Mizore</title>
+  <title>家用扩散模型 (1.5)：从SDE到ODE · 老鸽子茶话会</title>
   <meta name="description" content="在上一期我们速成了SDE，这一期我们要从SDE推导出ODE。">
 
-  <meta property="og:title" content="家用扩散模型速成 (1.5)：从SDE到ODE">
+  <meta property="og:title" content="家用扩散模型 (1.5)：从SDE到ODE">
   <meta property="og:description" content="在上一期我们速成了SDE，这一期我们要从SDE推导出ODE。">
   <meta property="og:type" content="article">
 
@@ -45,17 +45,17 @@
   <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="文章目录">
     <div class="sidebar__inner">
-      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
         <p class="sidebar__heading">家用扩散模型系列</p>
         <ul class="sidebar__list">
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型速成 (1)：SDE从入门到弃疗</a></li>
-          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型速成 (1.5)：从SDE到ODE</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型速成 (1.7)：2022年的采样算法</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型速成 (2)：Latent Diffusion Model</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">扩散模型囫囵吞枣 (2.2)：Latent Consistency Models</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
         </ul>
       </nav>
     </div>
@@ -70,7 +70,7 @@
 
     <article class="post reveal">
       <header class="post__header">
-        <h1 class="post__title">家用扩散模型速成 (1.5)：从SDE到ODE</h1>
+        <h1 class="post__title">家用扩散模型 (1.5)：从SDE到ODE</h1>
         <p class="post__meta">
           <span class="post__date">2023-07-18 23:36</span>
         </p>
@@ -79,37 +79,37 @@
       <div class="post__body">
         <h2 id="%E4%BB%8ESDE%E5%88%B0ODE" tabindex="-1"><a class="header-anchor" href="#%E4%BB%8ESDE%E5%88%B0ODE">从SDE到ODE</a></h2>
 <h3 id="%E5%85%B3%E4%BA%8E%E4%B8%8A%E4%B8%80%E7%AF%87%E7%9A%84%E4%B8%80%E4%BA%9B%E8%A1%A5%E5%85%85..." tabindex="-1"><a class="header-anchor" href="#%E5%85%B3%E4%BA%8E%E4%B8%8A%E4%B8%80%E7%AF%87%E7%9A%84%E4%B8%80%E4%BA%9B%E8%A1%A5%E5%85%85...">关于上一篇的一些补充...</a></h3>
-<p>为了提醒这是个矩阵，这次用一个大写字母 \(\bm{D}(x, t) = \frac{1}{2}\bm{G}(x, t)\bm{G}^T(x, t)\) 来表示扩散系数。</p>
+<p>为了提醒这是个矩阵，这次用一个大写字母 \(\boldsymbol{D}(x, t) = \frac{1}{2}\boldsymbol{G}(x, t)\boldsymbol{G}^T(x, t)\) 来表示扩散系数。</p>
 <p>仔细读了读<a href="https://arxiv.org/abs/2011.13456">Score-Based Generative Modeling through Stochastic Differential Equations</a>的附录，发现其实上一篇最后谈reverse-time diffusion equation models的时候，注意到对任意D（或者说任意G）都有</p>
-<div class="math-display">\[\frac{1}{p(x, t)}\nabla \cdot(p(x, t)\bm{D}^i) = \nabla\cdot \bm{D}^i + \frac{1}{p(x, t)}\bm{D}^i\cdot \nabla p(x, t) = \nabla\cdot \bm{D}^i +\bm{D}^i\cdot \nabla\log p(x, t)\]</div>
-<p>这里和 \(\bm{G}(x, t) = g(t)\) 没有关系，对普通的G也是成立的。</p>
+<div class="math-display">\[\frac{1}{p(x, t)}\nabla \cdot(p(x, t)\boldsymbol{D}^i) = \nabla\cdot \boldsymbol{D}^i + \frac{1}{p(x, t)}\boldsymbol{D}^i\cdot \nabla p(x, t) = \nabla\cdot \boldsymbol{D}^i +\boldsymbol{D}^i\cdot \nabla\log p(x, t)\]</div>
+<p>这里和 \(\boldsymbol{G}(x, t) = g(t)\) 没有关系，对普通的G也是成立的。</p>
 <h3 id="Probability-Flow-ODE%EF%BC%88Section-4.3%2FAppendix-D.1%EF%BC%89" tabindex="-1"><a class="header-anchor" href="#Probability-Flow-ODE%EF%BC%88Section-4.3%2FAppendix-D.1%EF%BC%89">Probability Flow ODE（Section 4.3/Appendix D.1）</a></h3>
 <p>这里SDE中使用原文的符号f和G。</p>
 <p>众所周知，ODE的性质那是相当的好——好就好在ODE是deterministic的，任何X_0和X_t都有一一对应的关系，而且有一系列ODE solver可用。
 与此同时，SDE有个噪声dW，因此不是deterministic的，每一步都有随机性。但现在有一个好消息：</p>
-<p>对于任意SDE \(d\bm{X} = \bm{f}(\bm{X}, t)dt + \bm{G}(\bm{X}, t)d\bm{W}\) ，存在一个ODE \(d\bm{X}(t) = \tilde{\bm{f}}(\bm{X}, t)dt\) 使得两个X的概率分布一致。</p>
+<p>对于任意SDE \(d\boldsymbol{X} = \boldsymbol{f}(\boldsymbol{X}, t)dt + \boldsymbol{G}(\boldsymbol{X}, t)d\boldsymbol{W}\) ，存在一个ODE \(d\boldsymbol{X}(t) = \tilde{\boldsymbol{f}}(\boldsymbol{X}, t)dt\) 使得两个X的概率分布一致。</p>
 <p>那么，这个好事是怎么来的呢？我们回忆一下上一期讲过的KFE。</p>
-<div class="math-display">\[\begin{aligned} \partial_t p(x, t) &amp;= -\nabla \cdot (\bm{f}(x, t) p(x, t)) + \nabla^2: (\bm{D}(x, t) p(x, t)) \\ &amp;= -\nabla \cdot (\bm{f}(x, t) p(x, t))  + \sum_i \frac{\partial}{\partial x_i} (\nabla\cdot (\bm{D}^ip(x, t))) \\ &amp;= -\nabla \cdot (\bm{f}(x, t) p(x, t))  + \sum_i \frac{\partial}{\partial x_i} (p(x, t) (\nabla\cdot \bm{D}^i + \bm{D}^i\nabla \log p(x, t))) \\ &amp;= -\nabla \cdot (\bm{f}(x, t) p(x, t))  + \nabla\cdot (p(x, t) (\nabla\cdot \bm{D} + \bm{D}\nabla \log p(x, t))) \\ &amp;= -\nabla \cdot ((\bm{f}(x, t) - \nabla\cdot \bm{D} - \bm{D}\nabla \log p(x, t)) p(x, t))  + \nabla^2:\bm{0} \end{aligned}\]</div>
+<div class="math-display">\[\begin{aligned} \partial_t p(x, t) &amp;= -\nabla \cdot (\boldsymbol{f}(x, t) p(x, t)) + \nabla^2: (\boldsymbol{D}(x, t) p(x, t)) \\ &amp;= -\nabla \cdot (\boldsymbol{f}(x, t) p(x, t))  + \sum_i \frac{\partial}{\partial x_i} (\nabla\cdot (\boldsymbol{D}^ip(x, t))) \\ &amp;= -\nabla \cdot (\boldsymbol{f}(x, t) p(x, t))  + \sum_i \frac{\partial}{\partial x_i} (p(x, t) (\nabla\cdot \boldsymbol{D}^i + \boldsymbol{D}^i\nabla \log p(x, t))) \\ &amp;= -\nabla \cdot (\boldsymbol{f}(x, t) p(x, t))  + \nabla\cdot (p(x, t) (\nabla\cdot \boldsymbol{D} + \boldsymbol{D}\nabla \log p(x, t))) \\ &amp;= -\nabla \cdot ((\boldsymbol{f}(x, t) - \nabla\cdot \boldsymbol{D} - \boldsymbol{D}\nabla \log p(x, t)) p(x, t))  + \nabla^2:\boldsymbol{0} \end{aligned}\]</div>
 <p>然后最后这个式子再KFE转回去，就得到了我们想要的ODE：</p>
-<div class="math-display">\[d\bm{X} = (\bm{f}(x, t) - \nabla\cdot \bm{D}(x, t) - \bm{D}(x, t)\nabla \log p(x, t))dt + \bm{0}d\bm{W}\]</div>
+<div class="math-display">\[d\boldsymbol{X} = (\boldsymbol{f}(x, t) - \nabla\cdot \boldsymbol{D}(x, t) - \boldsymbol{D}(x, t)\nabla \log p(x, t))dt + \boldsymbol{0}d\boldsymbol{W}\]</div>
 <blockquote>
-<p>注：事实上，根据相同的逻辑，不难构造出一个SDE族 \(d\bm{X}(t) = \tilde{\bm{f_{\bm{\sigma}}}}(\bm{X}, t)dt + \bm{\sigma}(\bm{X}, t)d\bm{W}\)，使得里面的每个成员都有相同的概率分布——只要少从右边往左边划一些就可以了。</p>
+<p>注：事实上，根据相同的逻辑，不难构造出一个SDE族 \(d\boldsymbol{X}(t) = \tilde{\boldsymbol{f_{\boldsymbol{\sigma}}}}(\boldsymbol{X}, t)dt + \boldsymbol{\sigma}(\boldsymbol{X}, t)d\boldsymbol{W}\)，使得里面的每个成员都有相同的概率分布——只要少从右边往左边划一些就可以了。</p>
 </blockquote>
-<p>特别的，在扩散模型中， \(\bm{G}(x, t) = g(t)\) ，所以 \(\nabla \cdot \bm{D}=\bm{0}\) ，于是我们有：</p>
-<div class="math-display">\[d\mathbf{x} = \{\bm{f}(\mathbf{x}, t) - \frac{1}{2} \bm{G}(t)\bm{G}^T(t)\nabla_{\mathbf{x}} \log p(\mathbf{x}, t)\}dt := \tilde{\bm{f}} (\mathbf{x}, t) dt\]</div>
+<p>特别的，在扩散模型中， \(\boldsymbol{G}(x, t) = g(t)\) ，所以 \(\nabla \cdot \boldsymbol{D}=\boldsymbol{0}\) ，于是我们有：</p>
+<div class="math-display">\[d\mathbf{x} = \{\boldsymbol{f}(\mathbf{x}, t) - \frac{1}{2} \boldsymbol{G}(t)\boldsymbol{G}^T(t)\nabla_{\mathbf{x}} \log p(\mathbf{x}, t)\}dt := \tilde{\boldsymbol{f}} (\mathbf{x}, t) dt\]</div>
 <h3 id="Exact-Likelihood-from-ODE-%EF%BC%88Appendix-D.2%EF%BC%89" tabindex="-1"><a class="header-anchor" href="#Exact-Likelihood-from-ODE-%EF%BC%88Appendix-D.2%EF%BC%89">Exact Likelihood from ODE （Appendix D.2）</a></h3>
 <p>这正是Score-based Diffusion在inference时击败DDPM的秘诀——DDPM是在SDE上离散的采样，这个是解析的，所以理论上说可以做得更好（只要中间step数够多）</p>
-<p>具体的，对 \(d\mathbf{x} = \tilde{\bm{f}} (\mathbf{x}, t)dt\) ，由instantaneous change of variables formula（见<a href="https://arxiv.org/pdf/1806.07366.pdf">Neural ODE</a>的Appendix A）有</p>
-<div class="math-display">\[\log p_0(\mathbf{x}_0) = \log p_T (\mathbf{x}_T) + \int_0^T \nabla\cdot \tilde{\bm{f}} (\mathbf{x}, t) dt\]</div>
-<p>其中， \(\nabla\cdot \tilde{\bm{f}} (\mathbf{x}, t)\) 的计算非常昂贵，我们采用Skilling-Hutchinson trace estimator，这是一个无偏估计：</p>
-<div class="math-display">\[\nabla\cdot \tilde{\bm{f}} (\mathbf{x}, t) =E_{\bm{\epsilon}\sim p(\bm{\epsilon})}[\bm{\epsilon}^T(\nabla\tilde{\bm{f}}) (\mathbf{x}, t) \bm{\epsilon}]\]</div>
-<p>这里 \(\nabla\tilde{\bm{f}}\) 是jacobian， \(\bm{\epsilon}\) 服从均值0方差I。</p>
-<p>因为这是无偏估计，所以可以通过采样若干次\(\bm{\epsilon}\)取平均（这个e^TJe可以用gradient简单的计算）来逼近。</p>
-<h2 id="Score-Function%E2%80%94%E2%80%94" tabindex="-1"><a class="header-anchor" href="#Score-Function%E2%80%94%E2%80%94">Score Function—— \(\nabla_{\bf{x}} \log p_t(\bf{x})\)</a></h2>
-<p>好消息是这个函数不是真正的概率，不需要normalize到1，但是又连续——于是一个自然的动机是用一个NN \(\bm{s}_{\bm{\theta}}\) 来估测。</p>
+<p>具体的，对 \(d\mathbf{x} = \tilde{\boldsymbol{f}} (\mathbf{x}, t)dt\) ，由instantaneous change of variables formula（见<a href="https://arxiv.org/pdf/1806.07366.pdf">Neural ODE</a>的Appendix A）有</p>
+<div class="math-display">\[\log p_0(\mathbf{x}_0) = \log p_T (\mathbf{x}_T) + \int_0^T \nabla\cdot \tilde{\boldsymbol{f}} (\mathbf{x}, t) dt\]</div>
+<p>其中， \(\nabla\cdot \tilde{\boldsymbol{f}} (\mathbf{x}, t)\) 的计算非常昂贵，我们采用Skilling-Hutchinson trace estimator，这是一个无偏估计：</p>
+<div class="math-display">\[\nabla\cdot \tilde{\boldsymbol{f}} (\mathbf{x}, t) =E_{\boldsymbol{\epsilon}\sim p(\boldsymbol{\epsilon})}[\boldsymbol{\epsilon}^T(\nabla\tilde{\boldsymbol{f}}) (\mathbf{x}, t) \boldsymbol{\epsilon}]\]</div>
+<p>这里 \(\nabla\tilde{\boldsymbol{f}}\) 是jacobian， \(\boldsymbol{\epsilon}\) 服从均值0方差I。</p>
+<p>因为这是无偏估计，所以可以通过采样若干次\(\boldsymbol{\epsilon}\)取平均（这个e^TJe可以用gradient简单的计算）来逼近。</p>
+<h2 id="Score-Function%E2%80%94%E2%80%94" tabindex="-1"><a class="header-anchor" href="#Score-Function%E2%80%94%E2%80%94">Score Function—— \(\nabla_{\mathbf{x}} \log p_t(\mathbf{x})\)</a></h2>
+<p>好消息是这个函数不是真正的概率，不需要normalize到1，但是又连续——于是一个自然的动机是用一个NN \(\boldsymbol{s}_{\boldsymbol{\theta}}\) 来估测。</p>
 <p>于是，这个近似的reverse SDE就会变成：</p>
 <div class="math-display">\[\mathrm{d} \hat{\mathbf{x}}=\left[\boldsymbol{f}(\hat{\mathbf{x}}, t)-g(t)^2 \boldsymbol{s}_{\boldsymbol{\theta}}(\hat{\mathbf{x}}, t)\right] \mathrm{d} t+g(t) \mathrm{d} \overline{\mathbf{w}}, \quad \hat{\mathbf{x}}_{\boldsymbol{\theta}}(T) \sim \pi\]</div>
-<p>这样解出来的x的概率分布（显然是conditioned on \(\theta\) 的）记作 \(p_{\bm{\theta}}^{SDE}\) 。</p>
+<p>这样解出来的x的概率分布（显然是conditioned on \(\theta\) 的）记作 \(p_{\boldsymbol{\theta}}^{SDE}\) 。</p>
 <h2 id="%E4%BC%98%E5%8C%96%E7%9B%AE%E6%A0%87" tabindex="-1"><a class="header-anchor" href="#%E4%BC%98%E5%8C%96%E7%9B%AE%E6%A0%87">优化目标</a></h2>
 <p>现在我们万事俱备，只差一个loss。</p>
 <h3 id="Score-Matching" tabindex="-1"><a class="header-anchor" href="#Score-Matching">Score Matching</a></h3>
@@ -118,7 +118,7 @@
 <p>其中 \(\lambda\) 是一个我们选择的weight。原文用J大概是因为上式其实是一个能量。</p>
 <p>这个目标是有数学理论保证的。同作者的[2]表明，如果取 \(\lambda(t)=g(t)^2\) ，我们有一个很好的上界估计：</p>
 <div class="math-display">\[D_{\mathrm{KL}}\left(p \| p_{\boldsymbol{\theta}}^{\mathrm{SDE}}\right) \leqslant \mathcal{J}_{\mathrm{SM}}\left(\boldsymbol{\theta} ; g(\cdot)^2\right)+D_{\mathrm{KL}}\left(p_T \| \pi\right)\]</div>
-<p>当 \(\bm{s}_{\bm{\theta}} \equiv \nabla_{\bm{x}} \log q_t(\bm{x}), q_T\sim \pi\) 时等号成立，且 \(p_{\bm{\theta}}^{SDE}=p_{\bm{\theta}}^{ODE}=q\) 。</p>
+<p>当 \(\boldsymbol{s}_{\boldsymbol{\theta}} \equiv \nabla_{\boldsymbol{x}} \log q_t(\boldsymbol{x}), q_T\sim \pi\) 时等号成立，且 \(p_{\boldsymbol{\theta}}^{SDE}=p_{\boldsymbol{\theta}}^{ODE}=q\) 。</p>
 <p>当然现实中如果s不精确的时候，SDE和ODE的p就对不上，但似乎empirically差不多。</p>
 <h3 id="Denoising-Score-Matching" tabindex="-1"><a class="header-anchor" href="#Denoising-Score-Matching">Denoising Score Matching</a></h3>
 <p>实际上 \(\nabla_{\mathbf{x}} \log p_t(\mathbf{x})\) 很难估计，所以常用的是带条件（初始值）的版本：</p>
@@ -131,7 +131,7 @@
 <p>DSM的好处如下：</p>
 <ul>
 <li>
-<p>\(p_{0 t}\left(\mathbf{x}^{\prime} \mid \mathbf{x}\right)\) 是tractable的——如果扩散模型中取 \(\bm{f}(\mathbf{x}, t)\) 对x线性，那么这个概率就是一个Gaussian。</p>
+<p>\(p_{0 t}\left(\mathbf{x}^{\prime} \mid \mathbf{x}\right)\) 是tractable的——如果扩散模型中取 \(\boldsymbol{f}(\mathbf{x}, t)\) 对x线性，那么这个概率就是一个Gaussian。</p>
 </li>
 <li>
 <p>因为是Gaussian，所以即使加上 \(\nabla\) 之后，这个式子也是有closed form的。</p>
@@ -180,18 +180,18 @@
 <div class="math-display">\[\mathbf{x}_i=\sqrt{1-\beta_i}\mathbf{x}_{i-1}+\sqrt{\beta_i}\mathbf{z}_{i-1}\]</div>
 <p>N趋于无穷的时候，把这个东西看成连续的，可以想象成有一个函数 \(\beta(\frac{i}{N})=\frac{\beta_i}{N}\) 对每个step都趋于无穷小。</p>
 <p>所以泰勒展开一下，连续形式的前向SDE是</p>
-<div class="math-display">\[d\mathbf{x}=-\frac{1}{2}\beta(t)\mathbf{x}dt+\sqrt{\beta(t)}d\bm{W}\]</div>
+<div class="math-display">\[d\mathbf{x}=-\frac{1}{2}\beta(t)\mathbf{x}dt+\sqrt{\beta(t)}d\boldsymbol{W}\]</div>
 <p>于是反向SDE是</p>
-<div class="math-display">\[d\mathbf{x}=(-\frac{1}{2}\beta(t)\mathbf{x}-\beta(t)\nabla_{\mathbf{x}} \log p_t(\mathbf{x}))dt+\sqrt{\beta(t)}d\bar{\bm{W}}\]</div>
+<div class="math-display">\[d\mathbf{x}=(-\frac{1}{2}\beta(t)\mathbf{x}-\beta(t)\nabla_{\mathbf{x}} \log p_t(\mathbf{x}))dt+\sqrt{\beta(t)}d\bar{\boldsymbol{W}}\]</div>
 <p>然后你再离散回去（注意这里dt是负的），假装对dt做了一个很小的积分，于是你形式化的得到</p>
-<div class="math-display">\[\mathbf{x}_{i-1}-\mathbf{x}_i=\frac{1}{2}\beta_i\mathbf{x}_i +\beta_i\bm{s}^*_\theta(\mathbf{x}_i, i)+\sqrt{\beta_i}\mathbf{z}_i\]</div>
+<div class="math-display">\[\mathbf{x}_{i-1}-\mathbf{x}_i=\frac{1}{2}\beta_i\mathbf{x}_i +\beta_i\boldsymbol{s}^*_\theta(\mathbf{x}_i, i)+\sqrt{\beta_i}\mathbf{z}_i\]</div>
 <p>然后脑补一下反向的泰勒（记住这里beta是无穷小），可以写成</p>
-<div class="math-display">\[\mathbf{x}_{i-1}=\frac{1}{\sqrt{1-\beta_i}}(\mathbf{x}_i+\beta_i\bm{s}^*_\theta(\mathbf{x}_i, i))+\sqrt{\beta_i}\mathbf{z}_i\]</div>
+<div class="math-display">\[\mathbf{x}_{i-1}=\frac{1}{\sqrt{1-\beta_i}}(\mathbf{x}_i+\beta_i\boldsymbol{s}^*_\theta(\mathbf{x}_i, i))+\sqrt{\beta_i}\mathbf{z}_i\]</div>
 <p>这就是所谓Langevin Dynamics。这个式子也出现在[1]的2.2中, aka.“ancestral sampling”。</p>
 <p>到这里就已经和DDPM形式上相当像了。这里和DDPM原文\(-\frac{1}{\sqrt{1-\bar{\alpha}_t}}\)差了一个系数，这是怎么回事呢？
 这是因为DDPM里算的其实是 \(\mathbf{x}_t\left(\mathbf{x}_0, \boldsymbol{\epsilon}\right)=\sqrt{\bar{\alpha}_t} \mathbf{x}_0+\sqrt{1-\bar{\alpha}_t} \boldsymbol{\epsilon}\) 。
-用Gaussian的PDF计算一下，就会发现 \(\nabla_{\mathbf{x}} \log p_t(\mathbf{x}_t)=\frac{\nabla_{\mathbf{x}}p_t(\mathbf{x}_t)}{p_t(\mathbf{x}_t)} = ... = -\frac{1}{\sqrt{1-\bar{\alpha}}}\bm{\epsilon}\)</p>
-<p>所以两者其实是一码事，也就是说DDPM这里所谓估 \(\bm{\epsilon}_\theta\) 其实就是在估测Score Function。</p>
+用Gaussian的PDF计算一下，就会发现 \(\nabla_{\mathbf{x}} \log p_t(\mathbf{x}_t)=\frac{\nabla_{\mathbf{x}}p_t(\mathbf{x}_t)}{p_t(\mathbf{x}_t)} = ... = -\frac{1}{\sqrt{1-\bar{\alpha}}}\boldsymbol{\epsilon}\)</p>
+<p>所以两者其实是一码事，也就是说DDPM这里所谓估 \(\boldsymbol{\epsilon}_\theta\) 其实就是在估测Score Function。</p>
 <p>题外话，在现实中：</p>
 <ul>
 <li>Langevin Equation的 \(-\mathbf{\lambda}\mathbf{v}\) 这一项其实是摩擦力（阻尼，damping），使用KFE立得 \(t\to\infty\) 的时候会趋近于一个期望为0，方差随着时间变大的纯Gaussian Noise，整个drift项都被阻尼磨掉了。</li>
@@ -206,13 +206,13 @@
     </article>
 
     <nav class="post-nav-bottom">
-      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-1-sde.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型速成 (1)：SDE从入门到弃疗</span></a>
-      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-1p7-samplers.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型速成 (1.7)：2022年的采样算法</span></a>
+      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-1-sde.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型 (1)：SDE从入门到弃疗</span></a>
+      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-1p7-samplers.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型 (1.7)：2022年的采样算法</span></a>
     </nav>
 
     <footer class="footer post__footer">
       <a class="post__origin" href="https://zhuanlan.zhihu.com/p/643961621" target="_blank" rel="noopener">知乎专栏原文</a>
-      <p>© Mizore · made with 🍵</p>
+      <p>© 老鸽子茶话会 · made with 🍵</p>
     </footer>
 
   </main>

@@ -4,11 +4,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>家用扩散模型速成 (2)：Latent Diffusion Model · Mizore</title>
-  <meta name="description" content="VQVAE，LDM和ROPE">
+  <title>家用扩散模型 (2)：Latent Diffusion Model · 老鸽子茶话会</title>
+  <meta name="description" content="VQVAE，LDM和RoPE">
 
-  <meta property="og:title" content="家用扩散模型速成 (2)：Latent Diffusion Model">
-  <meta property="og:description" content="VQVAE，LDM和ROPE">
+  <meta property="og:title" content="家用扩散模型 (2)：Latent Diffusion Model">
+  <meta property="og:description" content="VQVAE，LDM和RoPE">
   <meta property="og:type" content="article">
 
   <link rel="icon"
@@ -45,17 +45,17 @@
   <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="文章目录">
     <div class="sidebar__inner">
-      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
         <p class="sidebar__heading">家用扩散模型系列</p>
         <ul class="sidebar__list">
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型速成 (1)：SDE从入门到弃疗</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型速成 (1.5)：从SDE到ODE</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型速成 (1.7)：2022年的采样算法</a></li>
-          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型速成 (2)：Latent Diffusion Model</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">扩散模型囫囵吞枣 (2.2)：Latent Consistency Models</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
         </ul>
       </nav>
     </div>
@@ -70,7 +70,7 @@
 
     <article class="post reveal">
       <header class="post__header">
-        <h1 class="post__title">家用扩散模型速成 (2)：Latent Diffusion Model</h1>
+        <h1 class="post__title">家用扩散模型 (2)：Latent Diffusion Model</h1>
         <p class="post__meta">
           <span class="post__date">2023-08-13 16:22</span>
         </p>
@@ -142,7 +142,7 @@
 <p>原文的说法是We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions（section 3.5）</p>
 </blockquote>
 <blockquote>
-<p>鸽子注：虽然在NLP里的本意是为了相对位置，但对于diffusion其实也是很有道理的——回忆一下 \(\boldsymbol{\epsilon}_\theta(x, t)\) 其实是尝试approximate噪声 \(\boldsymbol{\epsilon}\) ，而噪声是Wiener过程，它也是Markov的，两个噪声的差只和时间差有关。</p>
+<p>注：虽然在NLP里的本意是为了相对位置，但对于diffusion其实也是很有道理的——回忆一下 \(\boldsymbol{\epsilon}_\theta(x, t)\) 其实是尝试approximate噪声 \(\boldsymbol{\epsilon}\) ，而噪声是Wiener过程，它也是Markov的，两个噪声的差只和时间差有关。</p>
 </blockquote>
 <p>而使用geometric progression的\(\omega_k\)，乍一看不太自然——因为大家熟悉的Fourier变换需要线性的 \(\omega_k\) ，搞成geometric就不能碰瓷Fourier了。
 但其实这个选择也有些道理：类比一下，如果采样int的话，一个自然的想法是采样n进制上的各位，位的底是指数增长的，而位上的值也是一个周期函数。那如果采样float呢？我们这个 \(\omega_k\) 实际上可以看成 \(\theta^{2/d}\) 进制的编码（</p>
@@ -188,13 +188,13 @@
     </article>
 
     <nav class="post-nav-bottom">
-      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-1p7-samplers.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型速成 (1.7)：2022年的采样算法</span></a>
-      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-2p1-vsd.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</span></a>
+      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-1p7-samplers.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型 (1.7)：2022年的采样算法</span></a>
+      <a class="post-nav-link post-nav-link--next" href="/blog/posts/diffusion-2p1-vsd.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">家用扩散模型 (2.1)：Variational Score Distillation</span></a>
     </nav>
 
     <footer class="footer post__footer">
       <a class="post__origin" href="https://zhuanlan.zhihu.com/p/645326315" target="_blank" rel="noopener">知乎专栏原文</a>
-      <p>© Mizore · made with 🍵</p>
+      <p>© 老鸽子茶话会 · made with 🍵</p>
     </footer>
 
   </main>

@@ -4,11 +4,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>扩散模型囫囵吞枣 (2.2)：Latent Consistency Models · Mizore</title>
-  <meta name="description" content="免责声明：鸽子只是一个平凡的数学爱好者，如果blog里出现了错误还请大佬们指正... 前情提要如果是鸽子 之前blog的读者，应该还记得Diffusion Model作为SDE，和ODE的对应关系：每一个SDE都有一个唯一对应的ODE，而…">
+  <title>家用扩散模型 (2.2)：Latent Consistency Models · 老鸽子茶话会</title>
+  <meta name="description" content="23年最火的few-step模型">
 
-  <meta property="og:title" content="扩散模型囫囵吞枣 (2.2)：Latent Consistency Models">
-  <meta property="og:description" content="免责声明：鸽子只是一个平凡的数学爱好者，如果blog里出现了错误还请大佬们指正... 前情提要如果是鸽子 之前blog的读者，应该还记得Diffusion Model作为SDE，和ODE的对应关系：每一个SDE都有一个唯一对应的ODE，而…">
+  <meta property="og:title" content="家用扩散模型 (2.2)：Latent Consistency Models">
+  <meta property="og:description" content="23年最火的few-step模型">
   <meta property="og:type" content="article">
 
   <link rel="icon"
@@ -45,17 +45,17 @@
   <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="文章目录">
     <div class="sidebar__inner">
-      <a class="sidebar__brand" href="/blog/">🍵 茶话 · Blog</a>
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
         <p class="sidebar__heading">家用扩散模型系列</p>
         <ul class="sidebar__list">
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型速成 (1)：SDE从入门到弃疗</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型速成 (1.5)：从SDE到ODE</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型速成 (1.7)：2022年的采样算法</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型速成 (2)：Latent Diffusion Model</a></li>
-          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</a></li>
-          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-2p2-lcm.html">扩散模型囫囵吞枣 (2.2)：Latent Consistency Models</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+          <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+          <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
         </ul>
       </nav>
     </div>
@@ -70,7 +70,7 @@
 
     <article class="post reveal">
       <header class="post__header">
-        <h1 class="post__title">扩散模型囫囵吞枣 (2.2)：Latent Consistency Models</h1>
+        <h1 class="post__title">家用扩散模型 (2.2)：Latent Consistency Models</h1>
         <p class="post__meta">
           <span class="post__date">2023-11-26 22:40</span>
         </p>
@@ -79,24 +79,20 @@
       <div class="post__body">
         <p>免责声明：鸽子只是一个平凡的数学爱好者，如果blog里出现了错误还请大佬们指正...</p>
 <h2 id="%E5%89%8D%E6%83%85%E6%8F%90%E8%A6%81" tabindex="-1"><a class="header-anchor" href="#%E5%89%8D%E6%83%85%E6%8F%90%E8%A6%81">前情提要</a></h2>
-<p>如果是鸽子<a href="https://zhuanlan.zhihu.com/p/643961621">之前blog</a>的读者，应该还记得Diffusion Model作为<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=SDE&amp;zhida_source=entity">SDE</a>，和ODE的对应关系：每一个SDE都有一个唯一对应的ODE，而一个ODE对应一个SDE族。</p>
-<p><a href="https://zhuanlan.zhihu.com/p/645971110">之前讲EDM[5]的时候提到过</a>，为了让SDE的转移概率是Gaussian，通常来说SDE两项对x都必须是线性的，所以一共也没有几种可行设置。去年最流行的经典Diffusion设置自然是EDM（事实上<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=DDIM&amp;zhida_source=entity">DDIM</a>也用了同款取值），查EDM论文表1可知其各项的取值是</p>
+<p>如果是<a href="/blog/posts/diffusion-1p5-ode.html">之前blog</a>的读者，应该还记得Diffusion Model作为SDE，和ODE的对应关系：每一个SDE都有一个唯一对应的ODE，而一个ODE对应一个SDE族。</p>
+<p><a href="/blog/posts/diffusion-1p7-samplers.html">之前讲EDM[5]的时候提到过</a>，为了让SDE的转移概率是Gaussian，通常来说SDE两项对x都必须是线性的，所以一共也没有几种可行设置。去年最流行的经典Diffusion设置自然是EDM（事实上DDIM也用了同款取值），查EDM论文表1可知其各项的取值是</p>
 <div class="math-display">\[\sigma(t)=t, s(t)=1\]</div>
 <p>翻译成SDE函数里的f和g就是</p>
 <div class="math-display">\[f(t)=0, g(t)=\sqrt{2t}\]</div>
 <p>于是，对应的ODE是（记\(\mathbf{s}_{\theta}(\mathbf{x}_t, t) :\approx \nabla_{\mathbf{x}}\log p_t(\mathbf{x})\)是score function对应的nn）</p>
 <div class="math-display">\[\frac{d}{dt}\mathbf{x}_t = -t \mathbf{s}_{\theta}(\mathbf{x}_t, t)\]</div>
-<p>截至2022年，解这个ODE（也就是从noise恢复原图）的路数主要有两类：</p>
-<ul>
-<li>一类是数值法硬解这个ODE（比如Euler，Heun或者DPM-Solver++，当然也包括Ancestral Sampling之类不ODE的方法）——但即使2022年最好的Solver也需要10+步迭代来得到一个好结果。</li>
-<li>另一类是蒸馏（Distillation，比如<a href="https://zhuanlan.zhihu.com/p/668704605">这篇blog</a>的SDS和VSD），能蒸出来当然很好（因为从generator你就能1步出图了），但是首先蒸馏本身很贵，其次你出的图quality不太能进一步提高（</li>
-</ul>
+<p>然而，即使2022年最好的Solver也需要10+步迭代来得到一个好结果。</p>
 <p>那么，有没有什么办法，能比较便宜的1步得到可以接受的近似解，同时又能trade compute for quality呢？</p>
-<h2 id="EDM%E7%9A%84%E2%80%9CDenoiser%E2%80%9D" tabindex="-1"><a class="header-anchor" href="#EDM%E7%9A%84%E2%80%9CDenoiser%E2%80%9D">EDM的“<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=Denoiser&amp;zhida_source=entity">Denoiser</a>”</a></h2>
+<h2 id="EDM%E7%9A%84%E2%80%9CDenoiser%E2%80%9D" tabindex="-1"><a class="header-anchor" href="#EDM%E7%9A%84%E2%80%9CDenoiser%E2%80%9D">EDM的“Denoiser”</a></h2>
 <p>在介绍EDM那篇blog里我们唐突引入了Denoiser但没有介绍其动机，所以在开始介绍CM之前先简单补一下。</p>
 <p>在EDM的设定下，由\(\sigma(t)\)和\(s(t)\)的定义可知\(p_{0\sigma}(\mathbf{x}_\sigma|\mathbf{x}_0)\sim \mathcal{N}(\mathbf{x}_0, \sigma^2\mathbf{I})\)，也就是说我们这个本质是往一个不变的原图\(\mathbf{x}_0\)上直接加强度为\(\sigma\)的Gaussian noise。</p>
 <blockquote>
-<p>值得指出的一点是，虽然鸽子之前的所有blog里都使用了0，但SDE/ODE这个连续时间的formulation是不能把时刻t倒到0的（见Song之前的几篇文章），所以其实只能停在一个略大于0的时刻\(\epsilon=0.002\)，Denoiser各项的系数也需要相应的修正以让目标是\(\mathbf{x}_\epsilon\)而非\(\mathbf{x}_0\)。但感觉大家都把0和\(\epsilon\)随便混着用，明白意思就好（</p>
+<p>值得指出的一点是，虽然之前的所有blog里都使用了0，但SDE/ODE这个连续时间的formulation是不能把时刻t倒到0的（见Song之前的几篇文章），所以其实只能停在一个略大于0的时刻\(\epsilon=0.002\)，Denoiser各项的系数也需要相应的修正以让目标是\(\mathbf{x}_\epsilon\)而非\(\mathbf{x}_0\)。但感觉大家都把0和\(\epsilon\)随便混着用，明白意思就好（</p>
 </blockquote>
 <p>如果在EDM这个设定下，我们想要找到一个“Denoiser” D，以把DSM Loss形式上写成对真值，而非对score或对noise的Loss：</p>
 <div class="math-display">\[\mathbb{E}_{\sigma\sim p_{\mathrm{{train}}}}\left[\lambda(\sigma)\ \mathbb{E}_{\mathbf{y}\sim p_{\mathrm{data}}}\ \mathbb{E}_{\mathbf{n}\sim N(0,\sigma^{2})}\ \|D_{\theta}(\mathbf{y}+\mathbf{n};\sigma)-\mathbf{y}\|_{2}^{2}\right]\]</div>
@@ -105,7 +101,7 @@
 <blockquote>
 <p>这个乍一看有点唬人（原文证明了一大圈），但你用传统思路想一下，传统上我们用\(\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)=-\sigma_t\nabla_{\mathbf{x}}\log p_t(\mathbf{x}_t, t)\)来解释score function，而\(\mathbf{\epsilon}_\theta(\mathbf{x}_t, t)\)是用来和\(\mathbf{\epsilon}\)做DSM的，所以这玩意形式上就是\(D(\mathbf{x}, \sigma) \sim \mathbf{x} - \sigma \mathbf{\epsilon}\)，是不是就觉得合理多了（</p>
 </blockquote>
-<p>鸽子乍一看，第一反应是哇这个形式这么好，那如果DSM Loss收敛到0了，我是不是提供任意一个image加上已知强度的噪音\(\mathbf{y}+\mathbf{n}\)，喂给D就能single step denoise出\(\mathbf{y}\)呢？</p>
+<p>乍一看，第一反应是哇这个形式这么好，那如果DSM Loss收敛到0了，我是不是提供任意一个image加上已知强度的噪音\(\mathbf{y}+\mathbf{n}\)，喂给D就能single step denoise出\(\mathbf{y}\)呢？</p>
 <p>很可惜，这是错误的，因为DSM并不收敛到0；事实上对一个有限的训练集，因为我们的分布是Gaussian的，你可以解析的把D的表达式算出来：</p>
 <div class="math-display">\[D(\mathbf{x}, \sigma)=\frac{\sum_i \mathcal{N}(\mathbf{x}; \mathbf{y}_i, \sigma^2 I) \mathbf{y}_i}{\sum_i \mathcal{N}(\mathbf{x}; \mathbf{y}_i, \sigma^2 I)}\]</div>
 <p>概括来说，\(\sigma\)越接近0，D越接近原图；而\(\sigma\)越大，D越接近整个训练集的均值，看上去就像一团浆糊，某种程度上也像把原图Gaussian Blur拉满的样子（EDM Figure 1b）。</p>
@@ -145,13 +141,13 @@ while 开心就好：
 <p>这个loss太松了。但我们可以把Loss改成相邻两项，而非每一项对第一项：</p>
 <div class="math-display">\[\mathcal{L}_{\text{CD}}(\mathbf{x}, n) = \left&lt;f_\theta(\mathbf{x}_{t_{n+1}}, t_{n+1}), f_\theta(\mathbf{x}_{t_{n}}, t_{n})\right&gt;_{\text{某种metric，比如L2或者LPIPS}}\]</div>
 <blockquote>
-<p>严谨的证明就懒得截图了，鸽子确实也没有读。很不严谨的说，鸽子感觉这近似于要求f对t的导数处处尽可能小，收敛的理想情况下应该f对t变成常数，也就是“consistency”。</p>
+<p>很不严谨的说，感觉这近似于要求f对t的导数处处尽可能小，收敛的理想情况下应该f对t变成常数，也就是“consistency”。</p>
 </blockquote>
 <p>这里给定\(\mathbf{x}_{t_{n+1}}\sim \mathcal{N}(\mathbf{x}, t_{n+1}^2 I)\)从data采样，\(\mathbf{x}_{t_{n}}\)其实是未知的，但我们知道首先它应该在ODE trajectory上，而且我们知道这个ODE的表达式的估测值（给定一个已经训好的模型，我们能拿到\(\mathbf{s}_{\phi}\)），因此可以用ODE solver做一步数值解来逼近，记作\(\hat{\mathbf{x}}_{t_{n}}^\phi\approx \mathbf{x}_{t_{n}}\)。</p>
-<p>除此之外，另一个变化是这里\(\mathbf{x}_{t_{n}}\)项用的并非\(\theta\)（online network），而是\(\theta\)的<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=EMA&amp;zhida_source=entity">EMA</a>，记作\(\theta^-\)（target network），以使得结果更稳定。</p>
+<p>除此之外，另一个变化是这里\(\mathbf{x}_{t_{n}}\)项用的并非\(\theta\)（online network），而是\(\theta\)的EMA，记作\(\theta^-\)（target network），以使得结果更稳定。</p>
 <blockquote>
-<p>熟悉的小伙伴可能一看到EMA和stopgrad立刻想到了contrastive learning——事实上作者说这套语言确实来自著名的<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=BYOL&amp;zhida_source=entity">BYOL</a>[4]。</p>
-<p>题外话：然后鸽子今天才发现Kaiming的<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=SimSiam&amp;zhida_source=entity">SimSiam</a>[6]指出EMA并不是BYOL不collapse的根本原因（虽然他们证明了EMA确实能涨点），而stopgrad和predictor才是BYOL不collapse的原因（</p>
+<p>熟悉的小伙伴可能一看到EMA和stopgrad立刻想到了contrastive learning——事实上作者说这套语言确实来自著名的BYOL[4]。</p>
+<p>题外话：然后今天才发现Kaiming的SimSiam[6]指出EMA并不是BYOL不collapse的根本原因（虽然他们证明了EMA确实能涨点），而stopgrad和predictor才是BYOL不collapse的原因（</p>
 </blockquote>
 <p>于是，正式的loss term是</p>
 <div class="math-display">\[\mathcal{L}_{\text{CD}}(\theta, \theta^-, \phi) := \mathbb{E}_{\mathbf{x}, n}[\lambda (t_n) \left&lt;f_\theta(\mathbf{x}_{t_{n+1}}, t_{n+1}), f_{\theta^-}(\hat{\mathbf{x}}_{t_{n}}^\phi, t_{n})\right&gt;_{\text{某种metric}}]\]</div>
@@ -167,13 +163,13 @@ while 开心就好：
 <p>当然，训练起来就慢多了...另一方面CT也没有teacher可以用来初始化weight。在实验里可以看到CD指标显著的比CT好（</p>
 </blockquote>
 <h2 id="Latent-Consistency-Models-%5B2%5D" tabindex="-1"><a class="header-anchor" href="#Latent-Consistency-Models-%5B2%5D">Latent Consistency Models [2]</a></h2>
-<p><a href="https://zhuanlan.zhihu.com/p/645326315">之前</a>介绍过LDM。LCM的思路和LDM一模一样，只不过把DSM Loss换成了CD Loss（称为Latent Consistency Distillation，LCD，Algorithm 1）。</p>
+<p><a href="/blog/posts/diffusion-2-ldm.html">之前</a>介绍过LDM。LCM的思路和LDM一模一样，只不过把DSM Loss换成了CD Loss（称为Latent Consistency Distillation，LCD，Algorithm 1）。</p>
 <p>如果LCD已经收敛的差不多了，也可以把Loss改成CT Loss对\(\theta\)进行finetune（Latent Consistency Fine-tuning，LCF，Algorithm 4），这样就可以把teacher diffusion model扔掉了。</p>
 <h3 id="Skipping-Time-Step-(Sec-4.3)" tabindex="-1"><a class="header-anchor" href="#Skipping-Time-Step-(Sec-4.3)">Skipping Time Step (Sec 4.3)</a></h3>
 <p>这是一项比起CM的重大改进。之前提到CD是\(t_{n+1}\)和\(t_n\)做loss，因为这两步非常接近，所以导致CD收敛很慢。作者们发现其实可以多跳几步，变成\(t_{n+k}\)和\(t_n\)做loss，可以极大的增加收敛速度，同时几乎不影响指标。</p>
 <p>从\(\mathbf{x}_{t_{n+k}}\)计算\(\mathbf{x}_{t_n}\)对各solver的closed form formula见Appendix E。</p>
 <blockquote>
-<p>注意<a href="https://zhida.zhihu.com/search?content_id=236783868&amp;content_type=Article&amp;match_order=1&amp;q=CFG&amp;zhida_source=entity">CFG</a>(Classifier-free guidance)是加在noise prediction上的：<br>
+<p>注意CFG(Classifier-free guidance)是加在noise prediction上的：<br>
 \(\tilde{\mathbf{\epsilon}}_\theta(z_t, \omega, c, t):= (1+\omega)\mathbf{\epsilon}_\theta(z_t, c, t) - \omega \mathbf{\epsilon}_\theta(z_t, \emptyset, t)\)<br>
 所以ODE的式子也需要相应修改。</p>
 </blockquote>
@@ -196,21 +192,18 @@ while 开心就好：
 <p>[5] <a href="https://arxiv.org/abs/2206.00364">Elucidating the Design Space of Diffusion-Based Generative Models</a></p>
 <p>[6] <a href="https://arxiv.org/abs/2011.10566">Exploring Simple Siamese Representation Learning</a></p>
 <p>[7] <a href="https://arxiv.org/abs/2210.03142">On Distillation of Guided Diffusion Models</a></p>
-<blockquote>
-<p>本文使用 <a href="https://zhuanlan.zhihu.com/p/106057556">Zhihu On VSCode</a> 创作并发布</p>
-</blockquote>
 
       </div>
     </article>
 
     <nav class="post-nav-bottom">
-      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-2p1-vsd.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">扩散模型囫囵吞枣 (2.1)：Variational Score Distillation</span></a>
+      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/diffusion-2p1-vsd.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用扩散模型 (2.1)：Variational Score Distillation</span></a>
       <span></span>
     </nav>
 
     <footer class="footer post__footer">
       <a class="post__origin" href="https://zhuanlan.zhihu.com/p/668940718" target="_blank" rel="noopener">知乎专栏原文</a>
-      <p>© Mizore · made with 🍵</p>
+      <p>© 老鸽子茶话会 · made with 🍵</p>
     </footer>
 
   </main>

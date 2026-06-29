@@ -1,10 +1,10 @@
 ---
-title: "家用扩散模型速成 (2)：Latent Diffusion Model"
+title: "家用扩散模型 (2)：Latent Diffusion Model"
 date: "2023-08-13 16:22"
 slug: diffusion-2-ldm
 order: 2
 original_url: "https://zhuanlan.zhihu.com/p/645326315"
-summary: "VQVAE，LDM和ROPE"
+summary: "VQVAE，LDM和RoPE"
 source: 知乎专栏
 ---
 ## 前文导航
@@ -94,7 +94,7 @@ $$
 
 > 原文的说法是We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions（section 3.5）  
 
-> 鸽子注：虽然在NLP里的本意是为了相对位置，但对于diffusion其实也是很有道理的——回忆一下 $\boldsymbol{\epsilon}_\theta(x, t)$ 其实是尝试approximate噪声 $\boldsymbol{\epsilon}$ ，而噪声是Wiener过程，它也是Markov的，两个噪声的差只和时间差有关。
+> 注：虽然在NLP里的本意是为了相对位置，但对于diffusion其实也是很有道理的——回忆一下 $\boldsymbol{\epsilon}_\theta(x, t)$ 其实是尝试approximate噪声 $\boldsymbol{\epsilon}$ ，而噪声是Wiener过程，它也是Markov的，两个噪声的差只和时间差有关。
 
 而使用geometric progression的$\omega_k$，乍一看不太自然——因为大家熟悉的Fourier变换需要线性的 $\omega_k$ ，搞成geometric就不能碰瓷Fourier了。
 但其实这个选择也有些道理：类比一下，如果采样int的话，一个自然的想法是采样n进制上的各位，位的底是指数增长的，而位上的值也是一个周期函数。那如果采样float呢？我们这个 $\omega_k$ 实际上可以看成 $\theta^{2/d}$ 进制的编码（

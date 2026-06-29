@@ -1,5 +1,5 @@
 ---
-title: "家用扩散模型速成 (1.7)：2022年的采样算法"
+title: "家用扩散模型 (1.7)：2022年的采样算法"
 date: "2023-07-30 17:54"
 slug: diffusion-1p7-samplers
 order: 1.7
@@ -16,7 +16,7 @@ source: 知乎专栏
 
 ## 转移概率：为什么扩散模型SDE里的f(x, t)的选取一般对x是线性的？
 
-在[上一期](https://zhuanlan.zhihu.com/p/643961621)中我们提过，为了让 $p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right)$ 是Gaussian，我们的f其实一般选择是线性的。
+在[上一期](/blog/posts/diffusion-1p5-ode.html)中我们提过，为了让 $p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right)$ 是Gaussian，我们的f其实一般选择是线性的。
 
 为什么呢？如果我们有一个线性的f：
 
@@ -33,7 +33,7 @@ $$
 我们有
 
 $$
-p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \cal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})
+p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \mathcal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})
 $$
 
 即服从高斯分布。
@@ -50,15 +50,15 @@ $$
 以下使用DPM系列的符号：
 
 $$
-p_{0 t}\left(\bm{x}_t \mid \bm{x}_0\right) \sim \cal{N}(\alpha_t\bm{x}_0, \sigma^2_t\mathbf{I})
+p_{0 t}\left(\boldsymbol{x}_t \mid \boldsymbol{x}_0\right) \sim \mathcal{N}(\alpha_t\boldsymbol{x}_0, \sigma^2_t\mathbf{I})
 $$
 
-翻译成人话： $\bm{x}_t=\alpha(t)\bm{x}_0+\sigma(t)\bm{\epsilon}$ ， $\bm{\epsilon}$ 是单位高斯噪声。
+翻译成人话： $\boldsymbol{x}_t=\alpha(t)\boldsymbol{x}_0+\sigma(t)\boldsymbol{\epsilon}$ ， $\boldsymbol{\epsilon}$ 是单位高斯噪声。
 
-使用类似DDPM的方式（详见上一期），可以用一个nn $\bm{\epsilon}_\theta(\bm{x}_t, t)$ 来从 $\bm{x}_t$ 预测 $\bm{x}_0\sim \bm{x}_\theta:=\frac{1}{\alpha_t}(\bm{x}_t-\sigma_t\bm{\epsilon}_\theta(\bm{x}_t, t))$ ——某种意义上可以认为这个nn在预测噪声 $\bm{\epsilon}$ 。可以推导出，这种情况下我们有
+使用类似DDPM的方式（详见上一期），可以用一个nn $\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t)$ 来从 $\boldsymbol{x}_t$ 预测 $\boldsymbol{x}_0\sim \boldsymbol{x}_\theta:=\frac{1}{\alpha_t}(\boldsymbol{x}_t-\sigma_t\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t))$ ——某种意义上可以认为这个nn在预测噪声 $\boldsymbol{\epsilon}$ 。可以推导出，这种情况下我们有
 
 $$
-\bm{\epsilon}_\theta(\bm{x}_t, t)=-\sigma_t\nabla_{\bm{x}}\log q_t(\bm{x}_t)
+\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t)=-\sigma_t\nabla_{\boldsymbol{x}}\log q_t(\boldsymbol{x}_t)
 $$
 
 （可以记住这个漂亮的结论）
@@ -76,7 +76,7 @@ $$
 按上一期的式子化简一下，把系数提出去，可以写成
 
 $$
-\mathcal{J}_{\mathrm{DSM}}(\boldsymbol{\theta} ; \omega(\cdot)):=\frac{1}{2} \int_0^T \mathbb{E}_{q_0(\bm{x}_0), q(\bm{\epsilon})}\left[\omega(t)\left\|\bm{\epsilon}_\theta(\bm{x}_t, t) - \bm{\epsilon}\right\|_2^2\right] \mathrm{d} t
+\mathcal{J}_{\mathrm{DSM}}(\boldsymbol{\theta} ; \omega(\cdot)):=\frac{1}{2} \int_0^T \mathbb{E}_{q_0(\boldsymbol{x}_0), q(\boldsymbol{\epsilon})}\left[\omega(t)\left\|\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t) - \boldsymbol{\epsilon}\right\|_2^2\right] \mathrm{d} t
 $$
 
 ### 对应的ODE，及其解法
@@ -84,13 +84,13 @@ $$
 按上一期的式子化简一下，有
 
 $$
-\frac{d}{dt}\bm{x}_t = f(t)\bm{x}_t+\frac{g^2(t)}{2\sigma_t}\bm{\epsilon}_\theta(\bm{x}_t, t)
+\frac{d}{dt}\boldsymbol{x}_t = f(t)\boldsymbol{x}_t+\frac{g^2(t)}{2\sigma_t}\boldsymbol{\epsilon}_\theta(\boldsymbol{x}_t, t)
 $$
 
 把f和g用 $\alpha$ 和 $\sigma$ 代入，经过一通操作（详见\[2\]），我们得到一个精确的表达式：
 
 $$
-\bm{x}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\bm{x}_{s}-\alpha_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\bm{\epsilon}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]
+\boldsymbol{x}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\boldsymbol{x}_{s}-\alpha_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\boldsymbol{\epsilon}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]
 $$
 
 （式3.5，\[2\] / 式7，\[3\]）
@@ -98,7 +98,7 @@ $$
 这个式子看起来可能有点怪，但其实可以写成这样： 
 
 $$
-\frac{\bm{x}_{s}}{\alpha_{s}}-\frac{\bm{x}_{t}}{\alpha_t}=\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\bm{\epsilon}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda
+\frac{\boldsymbol{x}_{s}}{\alpha_{s}}-\frac{\boldsymbol{x}_{t}}{\alpha_t}=\int_{\lambda_{s}}^{\lambda_{t}}e^{-\lambda}\hat{\boldsymbol{\epsilon}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda
 $$
 
 是不是就看起来像一个ODE的差分形式了。
@@ -108,7 +108,7 @@ $$
 如果t和s足够接近，我们可以把这项积分项泰勒展开（对 $\lambda$ 求n阶导），从而求出一个近似值。例如，一阶近似（记作DPM-solver-1）是
 
 $$
-\tilde{\bm{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\bm{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s) + \mathcal{O}((\lambda_t-\lambda_s)^2)
+\tilde{\boldsymbol{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\boldsymbol{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s) + \mathcal{O}((\lambda_t-\lambda_s)^2)
 $$
 
 > 这个实际上在ODE里叫[Euler法](https://en.wikipedia.org/wiki/Euler_method)。
@@ -118,10 +118,10 @@ $$
 但\[3\]中作者们发现直接二阶展开上式有些数值不稳定，所以他们变换了一下形式（式8, \[3\])：
 
 $$
-\bm{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\bm{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\bm{x}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]
+\boldsymbol{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\boldsymbol{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\boldsymbol{x}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda, t\in [0, s]
 $$
 
-注意这里用了 $\bm{x}_\theta:=\frac{1}{\alpha_t}(\bm{x}_t-\sigma_t\bm{\epsilon}_\theta)$，以及$\alpha$ 换成了 $\sigma$。
+注意这里用了 $\boldsymbol{x}_\theta:=\frac{1}{\alpha_t}(\boldsymbol{x}_t-\sigma_t\boldsymbol{\epsilon}_\theta)$，以及$\alpha$ 换成了 $\sigma$。
 
 这个式子的一阶展开依然是一样的（DDIM），但二阶展开有一些区别，记作DPM++2。
 
@@ -133,26 +133,26 @@ $$
 
 作者指出，实际上DDIM的SDE形式就是SDE-DPM-Solver++1，而ODE形式就是DPM-Solver-1。
 
-> 这也和Stable Diffusion的官方指南相吻合——他们推荐的SDE sampler正是DDIM或DPM++ SDE(2M)，而ODE sampler的推荐是DPM++ 2M，也就是说，不管怎么样，他们总归推荐的正是 $\bm{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\bm{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\bm{x}}_{\theta}(\hat{\bm{x}}_{\lambda},\lambda)d\lambda$ 的某种一阶或二阶近似。
+> 这也和Stable Diffusion的官方指南相吻合——他们推荐的SDE sampler正是DDIM或DPM++ SDE(2M)，而ODE sampler的推荐是DPM++ 2M，也就是说，不管怎么样，他们总归推荐的正是 $\boldsymbol{x}_{t}=\frac{\sigma_{t}}{\sigma_{s}}\boldsymbol{x}_{s}+\sigma_{t}\int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\boldsymbol{x}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda$ 的某种一阶或二阶近似。
 
 如果一时半会儿看不出来两者的联系，可以注意到DPM-Solver-1
 
 $$
-\tilde{\bm{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\bm{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s)
+\tilde{\boldsymbol{x}}_{t}=\frac{\alpha_{t}}{\alpha_{s}}\tilde{\boldsymbol{x}}_{s}-\alpha_{t} (\frac{\sigma_s}{\alpha_s}-\frac{\sigma_t}{\alpha_t}) \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s)
 $$
 
 事实上可以被写成 
 
 $$
-\tilde{\bm{x}}_{t}=\alpha_{t}\bm{x}_{\theta}(\tilde{\bm{x}}_s,s) + \sigma_{t}  \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s)
+\tilde{\boldsymbol{x}}_{t}=\alpha_{t}\boldsymbol{x}_{\theta}(\tilde{\boldsymbol{x}}_s,s) + \sigma_{t}  \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s)
 $$
 
-这样一看就看的很明显，DDIM是Final image + Direction + Noise的组合，显然第一项是final image，第二项是direction（别忘了$\sigma_{t}\bm{\epsilon}_{\theta}$其实是score function）。
+这样一看就看的很明显，DDIM是Final image + Direction + Noise的组合，显然第一项是final image，第二项是direction（别忘了$\sigma_{t}\boldsymbol{\epsilon}_{\theta}$其实是score function）。
 
 然后Ancestral版是 
 
 $$
-\tilde{\bm{x}}_{t}=\alpha_{t}\bm{x}_{\theta}(\tilde{\bm{x}}_s,s) + \sqrt{\sigma_{t}^2-\eta^2} \bm{\epsilon}_{\theta}(\tilde{\bm{x}}_s,s) +\eta \bm{z}_{s}
+\tilde{\boldsymbol{x}}_{t}=\alpha_{t}\boldsymbol{x}_{\theta}(\tilde{\boldsymbol{x}}_s,s) + \sqrt{\sigma_{t}^2-\eta^2} \boldsymbol{\epsilon}_{\theta}(\tilde{\boldsymbol{x}}_s,s) +\eta \boldsymbol{z}_{s}
 $$
 
 这个 $\eta$ 项是怎么来的呢？回忆一下我们在上一期里是怎么从SDE推出ODE的，少划一些noise过去就立得这个SDE族。
@@ -166,7 +166,7 @@ $$
 以下使用EDM的符号：
 
 $$
-p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \cal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})
+p_{0 t}\left(\mathbf{x}_t \mid \mathbf{x}_0\right) \sim \mathcal{N}(s(t)\mathbf{x}_0, s^2(t)\sigma^2(t)\mathbf{I})
 $$
 
 ### 既然这个转移概率的closed form对f和g这么丑，我们干脆别用f和g了吧！（异 曲 同 工）
@@ -209,9 +209,7 @@ $$
 \frac{\mathrm{d}x}{\mathrm{d}t}=\biggl(\frac{\dot{\sigma}(t)}{\sigma(t)}+\frac{\dot{s}(t)}{s(t)}\biggr)x-\frac{\dot{\sigma}(t)s(t)}{\sigma(t)}D_{\theta}\biggl(\frac{x}{s(t)};\sigma(t)\biggr)
 $$
 
-然后就可以抓一个二阶方法来解了（Heun）——当然鸽子懂个hammer的二阶方法，这里就不照着稿子念了。
-
-> 虽然但是，据Stable Diffusion的介绍，Heun似乎比较慢，所以大概也许不是很推荐（
+然后就可以抓一个二阶方法来解了（Heun）。虽然但是，据Stable Diffusion的介绍，Heun似乎比较慢，所以大概也许不是很推荐（
 
 ### 一些常见的扩散模型对应的 $\sigma$ 的取值
 
