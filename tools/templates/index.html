@@ -33,10 +33,7 @@
       <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
-        <p class="sidebar__heading">家用扩散模型系列</p>
-        <ul class="sidebar__list">
-{{sidebar_list}}
-        </ul>
+{{sidebar_nav}}
       </nav>
     </div>
   </aside>
@@ -58,12 +55,7 @@
       <p class="hero__tagline">知乎专栏同名。不过当年年轻的时候blog里中二玩意太多了，现在清理一下搞得正式些...</p>
     </header>
 
-    <section class="section reveal" aria-labelledby="posts-title">
-      <h2 id="posts-title" class="section__title"><span>文章</span></h2>
-      <div class="cards">
-        {{posts}}
-      </div>
-    </section>
+{{sections}}
 
     <footer class="footer">
       <p>© 老鸽子茶话会 · made with 🍵</p>

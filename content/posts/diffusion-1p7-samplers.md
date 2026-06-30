@@ -3,6 +3,7 @@ title: "家用扩散模型 (1.7)：2022年的采样算法"
 date: "2023-07-30 17:54"
 slug: diffusion-1p7-samplers
 order: 1.7
+series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/645971110"
 summary: "一些2022年常用的采样算法，包括DPM-solver++和EDM"
 source: 知乎专栏

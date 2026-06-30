@@ -3,6 +3,7 @@ title: "家用扩散模型 (2.2)：Latent Consistency Models"
 date: "2023-11-26 22:40"
 slug: diffusion-2p2-lcm
 order: 2.2
+series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/668940718"
 summary: "23年最火的few-step模型"
 source: 知乎专栏

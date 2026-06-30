@@ -3,6 +3,7 @@ title: "家用现代扩散模型速成 (2)：从 sCM 到 MeanFlow"
 date: "2026-06-28 00:30"
 slug: diffusion-3-scm-meanflow
 order: 3.1
+series: "家用现代扩散模型速成"
 summary: "一致性模型如何摆脱离散化：从 sCM 的 TrigFlow 与 JVP，到 MeanFlow 的平均速度，再到把目标解耦的 iMF。"
 draft: true
 ---

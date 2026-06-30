@@ -3,6 +3,7 @@ title: "家用现代扩散模型速成 (3)：从 VSD 到 DMD2"
 date: "2026-06-28 01:00"
 slug: diffusion-3p1-dmd2
 order: 3.2
+series: "家用现代扩散模型速成"
 summary: "分布匹配蒸馏这条反向散度的路线：DMD 怎么把 VSD 用在一步生成上，DMD2 又怎么把回归项扔掉、靠 TTUR 和 GAN 反超老师。"
 draft: true
 ---

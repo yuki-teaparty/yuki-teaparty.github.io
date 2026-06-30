@@ -3,6 +3,7 @@ title: "家用现代扩散模型速成 (5)：rCM 与 Causal-rCM"
 date: "2026-06-28 02:00"
 slug: diffusion-3p3-rcm
 order: 3.4
+series: "家用现代扩散模型速成"
 summary: "本系列收官：rCM 用连续时间一致性打底、score 蒸馏作正则，把前向与反向缝成一个目标；Causal-rCM 再把它推到因果自回归视频，连续时间比离散快 10×。"
 draft: true
 ---

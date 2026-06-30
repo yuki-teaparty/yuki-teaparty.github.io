@@ -3,6 +3,7 @@ title: "家用扩散模型 (1.5)：从SDE到ODE"
 date: "2023-07-18 23:36"
 slug: diffusion-1p5-ode
 order: 1.5
+series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/643961621"
 summary: "在上一期我们速成了SDE，这一期我们要从SDE推导出ODE。"
 source: 知乎专栏

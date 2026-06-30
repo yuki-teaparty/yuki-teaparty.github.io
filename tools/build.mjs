@@ -134,6 +134,7 @@ async function main() {
     posts.push({
       slug,
       title: data.title || slug,
+      series: data.series || '',
       date: data.date || '',
       order: typeof data.order === 'number' ? data.order : 999,
       summary: data.summary || '',
@@ -144,23 +145,51 @@ async function main() {
   }
   posts.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
 
-  // 左侧栏：文章目录（current 高亮）
-  const sidebarList = (currentSlug) =>
-    posts
-      .map((p) => {
-        const cur = p.slug === currentSlug ? ' is-current' : '';
-        const aria = p.slug === currentSlug ? ' aria-current="page"' : '';
-        return `          <li><a class="sidebar__link${cur}"${aria} href="/blog/posts/${p.slug}.html">${escapeHtml(p.title)}</a></li>`;
+  // 按 series 分专题；组间顺序 = 组内最小 order（posts 已排序，故按首次出现）
+  const seriesOrder = [];
+  const seriesMap = new Map();
+  for (const p of posts) {
+    const key = p.series || '未分类';
+    if (!seriesMap.has(key)) {
+      seriesMap.set(key, []);
+      seriesOrder.push(key);
+    }
+    seriesMap.get(key).push(p);
+  }
+
+  // 同专题内的上一篇/下一篇（不跨专题互链）
+  const navOf = new Map();
+  for (const key of seriesOrder) {
+    const group = seriesMap.get(key);
+    group.forEach((p, i) => navOf.set(p.slug, { prev: group[i - 1], next: group[i + 1] }));
+  }
+
+  // 左侧栏：按专题分组（current 高亮）
+  const sidebarNav = (currentSlug) =>
+    seriesOrder
+      .map((key) => {
+        const items = seriesMap
+          .get(key)
+          .map((p) => {
+            const cur = p.slug === currentSlug ? ' is-current' : '';
+            const aria = p.slug === currentSlug ? ' aria-current="page"' : '';
+            return `            <li><a class="sidebar__link${cur}"${aria} href="/blog/posts/${p.slug}.html">${escapeHtml(p.title)}</a></li>`;
+          })
+          .join('\n');
+        return `        <div class="sidebar__group">
+          <p class="sidebar__heading">${escapeHtml(key)}系列</p>
+          <ul class="sidebar__list">
+${items}
+          </ul>
+        </div>`;
       })
       .join('\n');
 
   await mkdir(POSTS_OUT, { recursive: true });
 
   // 逐篇生成
-  for (let i = 0; i < posts.length; i++) {
-    const p = posts[i];
-    const prev = posts[i - 1];
-    const next = posts[i + 1];
+  for (const p of posts) {
+    const { prev, next } = navOf.get(p.slug);
     const prevLink = prev
       ? `<a class="post-nav-link post-nav-link--prev" href="/blog/posts/${prev.slug}.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">${escapeHtml(prev.title)}</span></a>`
       : '<span></span>';
@@ -181,25 +210,36 @@ async function main() {
       content: p.html,
       prev_link: prevLink,
       next_link: nextLink,
-      sidebar_list: sidebarList(p.slug),
+      sidebar_nav: sidebarNav(p.slug),
     });
     await writeFile(path.join(POSTS_OUT, `${p.slug}.html`), out, 'utf8');
   }
 
-  // 列表页
-  const cards = posts
-    .map((p) => {
-      const excerpt = escapeHtml(makeExcerpt(p.summary));
-      return `        <article class="card card--link">
+  // 列表页：按专题分节
+  const sections = seriesOrder
+    .map((key, idx) => {
+      const cards = seriesMap
+        .get(key)
+        .map((p) => {
+          const excerpt = escapeHtml(makeExcerpt(p.summary));
+          return `        <article class="card card--link">
           <div class="card__head">
             <h3 class="card__title"><a class="card__titlelink" href="/blog/posts/${p.slug}.html">${escapeHtml(p.title)}</a>${p.date ? `<span class="card__date">${escapeHtml(p.date)}</span>` : ''}</h3>
           </div>
           <p class="card__desc">${excerpt}</p>
         </article>`;
+        })
+        .join('\n');
+      return `    <section class="section reveal" aria-labelledby="series-${idx}-title">
+      <h2 id="series-${idx}-title" class="section__title"><span>${escapeHtml(key)}系列</span></h2>
+      <div class="cards">
+${cards}
+      </div>
+    </section>`;
     })
     .join('\n');
 
-  await writeFile(path.join(BLOG_DIR, 'index.html'), fill(indexTpl, { posts: cards, sidebar_list: sidebarList('') }), 'utf8');
+  await writeFile(path.join(BLOG_DIR, 'index.html'), fill(indexTpl, { sections, sidebar_nav: sidebarNav('') }), 'utf8');
 
   console.log(`✓ 生成 ${posts.length} 篇文章 + 列表页`);
   console.log(`  blog/index.html`);

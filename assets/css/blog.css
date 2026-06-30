@@ -42,6 +42,7 @@
   margin: 0 0 10px;
 }
 .sidebar__list { list-style: none; margin: 0; padding: 0; }
+.sidebar__group + .sidebar__group { margin-top: 24px; }
 .sidebar__link {
   display: block;
   padding: 9px 12px;

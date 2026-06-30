@@ -3,6 +3,7 @@ title: "家用扩散模型 (2)：Latent Diffusion Model"
 date: "2023-08-13 16:22"
 slug: diffusion-2-ldm
 order: 2
+series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/645326315"
 summary: "VQVAE，LDM和RoPE"
 source: 知乎专栏

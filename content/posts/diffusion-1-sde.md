@@ -3,6 +3,7 @@ title: "家用扩散模型 (1)：SDE从入门到弃疗"
 date: "2023-07-13 00:05"
 slug: diffusion-1-sde
 order: 1
+series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/641768442"
 summary: "论没学过随机过程，也不想看一万个离散概率求和的人应该如何速成扩散模型数学。"
 source: 知乎专栏

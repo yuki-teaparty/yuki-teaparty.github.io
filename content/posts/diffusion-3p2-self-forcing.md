@@ -3,6 +3,7 @@ title: "家用现代扩散模型速成 (4)：自回归视频蒸馏——Self-For
 date: "2026-06-28 01:30"
 slug: diffusion-3p2-self-forcing
 order: 3.3
+series: "家用现代扩散模型速成"
 summary: "把分布匹配蒸馏推进到一帧一帧往下吐的视频：Self-Forcing 治曝光偏差，Self-Forcing++ 拉到分钟级，Causal-Forcing(++) 修双向→因果的架构错配。"
 draft: true
 ---
