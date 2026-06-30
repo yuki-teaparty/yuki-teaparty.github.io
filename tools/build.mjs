@@ -145,7 +145,7 @@ async function main() {
   }
   posts.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
 
-  // 按 series 分专题；组间顺序 = 组内最小 order（posts 已排序，故按首次出现）
+  // 按 series 分专题；组内仍按 order 升序（第 1 篇在前）
   const seriesOrder = [];
   const seriesMap = new Map();
   for (const p of posts) {
@@ -156,6 +156,8 @@ async function main() {
     }
     seriesMap.get(key).push(p);
   }
+  // 专题之间按时间倒序：较新的专栏（order 更大）排在更前面
+  seriesOrder.sort((a, b) => seriesMap.get(b)[0].order - seriesMap.get(a)[0].order);
 
   // 同专题内的上一篇/下一篇（不跨专题互链）
   const navOf = new Map();
