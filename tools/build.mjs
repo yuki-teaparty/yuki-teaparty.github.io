@@ -129,6 +129,7 @@ async function main() {
   for (const f of files) {
     const raw = await readFile(path.join(CONTENT_DIR, f), 'utf8');
     const { data, content } = matter(raw);
+    if (data.draft) continue; // draft 文章不参与编译（不进侧栏/列表，也不生成 HTML）
     const slug = data.slug || f.replace(/\.md$/, '');
     posts.push({
       slug,
@@ -167,12 +168,16 @@ async function main() {
       ? `<a class="post-nav-link post-nav-link--next" href="/blog/posts/${next.slug}.html"><span class="post-nav-link__label">下一篇 →</span><span class="post-nav-link__title">${escapeHtml(next.title)}</span></a>`
       : '<span></span>';
 
+    // 原创文章没有知乎 original_url，此时不渲染「原文」链接（否则会得到 href="" 的死链）
+    const originLink = p.original_url
+      ? `<a class="post__origin" href="${escapeHtml(p.original_url)}" target="_blank" rel="noopener">${escapeHtml(p.source)}原文</a>`
+      : '';
+
     const out = fill(postTpl, {
       title: escapeHtml(p.title),
       summary: escapeHtml(makeExcerpt(p.summary, 160)),
       date: escapeHtml(p.date),
-      source: escapeHtml(p.source),
-      original_url: escapeHtml(p.original_url),
+      origin_link: originLink,
       content: p.html,
       prev_link: prevLink,
       next_link: nextLink,
