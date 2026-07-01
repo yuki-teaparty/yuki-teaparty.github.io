@@ -16,9 +16,6 @@ summary: "Rectified Flow还是值得单开一篇讲的。"
 最近读了nvidia的rCM[[1]][r1]/Causal rCM[[2]][r2]。它有一个很好的综述——而且由于一作出自TSAIL，因此所用的符号和之前DPM-Solver[[3]][r3]完全一致，感觉又回到了23年读DPM的快乐时光——因此借着这个契机，这次尝试自学一下diffusion比较新的进度，计划一路写到能读懂Causal rCM为止。
 
 由于时代变了很多，因此干脆决定重开一个系列：这次就叫《家用现代扩散模型速成》好了。
-之前乱糟糟的老文章应该也会逐渐清理一下。
-
-// 另外，鸽子给自己做了个主页 https://nozomizore.com/ 欢迎扩列
 
 ## Recap：2022年的Diffusion Model
 
@@ -117,7 +114,7 @@ $$
 > RF原文给出了一种解法，叫 **reflow**：用当前模型把噪声 $\boldsymbol{\epsilon}$ 沿 ODE 跑出对应的 $\boldsymbol{x}_0$，再拿这批模型自己"连"好的 $(\boldsymbol{x}_0,\boldsymbol{\epsilon})$ 配对重训一个新的 RF。新配对不再交叉，边际流随之被**拉直**（rectified）；反复迭代，轨迹越来越接近直线。这就是rectified这个名字的来源。
 
 接近直线的轨迹有什么好处呢？好处就是一阶方法（一阶方法是linear的，对RF来说就退化成 $\boldsymbol{x}_t=\boldsymbol{x}_s+(t-s)\,\boldsymbol{v}_\theta(\boldsymbol{x}_s,s)$ ）的误差小。
-自从Rectified Flow一统江湖之后（自从Stable Diffusion 3开始，现代diffusion比如Wan和FLUX都只用RF了），大家的solver彻底换成了Euler，高阶solver则冷门了不少。
+自从Rectified Flow一统江湖之后（从Stable Diffusion 3开始，现代diffusion比如Wan和FLUX都只用RF了），大家的solver彻底换成了Euler，高阶solver则冷门了不少。
 
 > 虽然其实在有RF之前，大多数人也是用DDIM的...
 
