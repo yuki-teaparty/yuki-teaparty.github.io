@@ -1,52 +1,53 @@
 ---
-title: "家用现代扩散模型速成 (2)：weighting scheme"
+title: "家用现代扩散模型速成 (2)：Weighting Scheme"
 date: "2026-06-30 22:00"
 slug: modern_diffusion_2
 order: 3.05
 series: "家用现代扩散模型速成"
-summary: "RF把schedule钉死之后还剩的超参：训练时timestep按什么分布撒，推理时步点怎么排、Wan/Flux各自怎么shift，以及为什么最后还是Euler。"
-draft: true
+summary: "关于diffusion中t的采样，以及更多"
+draft: false
 ---
 
-## 前言
+## 什么是Weighting scheme
 
-上一篇讲到，自SD3以后RF一统江湖，schedule被钉死成 $\alpha_t=1-t,\sigma_t=t$ 的一条直线。schedule没得选了，solver也退化成Euler了——那训练的时候到底还剩下什么自由度？
-
-答案其实还不少，分两拨：**训练**时 $t$ 按什么分布撒（等价于给loss怎么加权），和**推理**时那个ODE用什么solver去解（步点放哪、用几阶、要不要加随机性）。
-
-前一拨在离散时代（DDPM）几乎不存在——那时候 $t$ 是 $\{1,\dots,1000\}$ 上的均匀分布，撒法就一种，写死在for循环里。可一旦进了连续时间，$t\in[0,1]$ 就是一个连续随机变量，它的分布 $\pi(t)$ 成了一个可以自由设计的东西，而这个设计对效果的影响大到离谱。上一篇把schedule和solver都"收敛"了，但收敛不代表没有超参——只是超参从"schedule长什么样"挪到了"怎么撒 $t$、怎么解ODE"上。这一篇就把这些旋钮一个个拧一遍。
-
-## 从离散到连续：t schedule
-
-先把训练目标写清楚。以RF的v-loss为例：
+我们考虑作为一个条件期望的diffusion loss。以RF的v-loss为例：
 
 $$
-\mathcal{L}=\mathbb{E}_{t\sim\pi(t)}\;\mathbb{E}_{\boldsymbol{x}_0,\boldsymbol{\epsilon}}\big[\,\|\boldsymbol{v}_\theta(\boldsymbol{x}_t,t)-\boldsymbol{v}\|^2\,\big]
+\mathcal{L}= \mathbb{E}_{t\sim\pi(t)} [\ell(t)] :=\mathbb{E}_{t\sim\pi(t)}\;\mathbb{E}_{\boldsymbol{x}_0,\boldsymbol{\epsilon}}\big[\,\|\boldsymbol{v}_\theta(\boldsymbol{x}_t,t)-\boldsymbol{v}\|^2\,\big] 
 $$
 
-在离散DDPM里，对 $t$ 的期望就是 $\frac1T\sum_{t=1}^T$ 这样一个朴素求和（离散扩散最丑陋的地方之一（）；在连续时间里，它变成
+其中 $\pi(t)$ 是 $t$ 的分布。显然， $\pi(t)$ 是一个超参数。
+
+古代diffusion比如DDPM里，t是离散且预定义的有限长数组，因此条件期望退化为 $\mathcal{L}=\frac1N\sum_{i=1}^N \ell(t_i)$ ，t的选取突出一个百花齐放（感兴趣的可以倒回去看上一章里EDM[[4]][r4]截图那个表）。
+
+但对连续的现代diffusion（上一章我们展示了diffusion和flow matching本质是一回事，以后我们就都叫diffusion了），条件期望是一个积分：
 
 $$
 \mathbb{E}_{t\sim\pi}[\ell(t)]=\int_0^1 \pi(t)\,\ell(t)\,dt
 $$
 
-其中 $\ell(t)$ 是给定 $t$、对 $(\boldsymbol{x}_0,\boldsymbol{\epsilon})$ 求完期望后剩下的那部分loss。
-
-这里有一个一眼就能看穿、但非常有用的观察：**"$t$ 按 $\pi$ 采样" 和 "$t$ 均匀采样、但给loss乘一个权重 $w(t)=\pi(t)$" 是同一件事**：
+注意到根据条件期望的定义，我们其实有
 
 $$
 \int_0^1 \pi(t)\,\ell(t)\,dt=\mathbb{E}_{t\sim U[0,1]}\big[\pi(t)\,\ell(t)\big]
 $$
 
-换句话说，"$t$ 撒在哪" 和 "哪些 $t$ 的loss更重要" 是一体两面。接下来的所有花活，本质都是在设计这个 $\pi(t)$（或者等价地 $w(t)$）。
+所以，选取 $\pi(t)$ 相当于固定 $\pi(t)\sim U[0,1]$ 时，选取diffusion loss的weighting[[3]][r3]。
+这也就是为什么 $\pi(t)$ 在huggingface的diffusers库里叫weighting scheme。
 
-> 有人管这叫loss weighting，有人管这叫timestep sampling，吵来吵去，其实是同一个东西的两种记号（
+> weighting_scheme的选项包括 `logit_normal`、`mode`、`sigma_sqrt`、`cosmap`、和`none`。`logit_normal`/`mode` 控制的是采样密度 $\pi(t)$，而 `sigma_sqrt`/`cosmap` 控制的是 weight，可见两者确实是完全不分的。
 
-### uniform：最朴素的撒法
+### Uniform（也就是"none"）
 
-最直接的选择当然是 $t\sim U[0,1]$，RF原文和早期的一些实现就是这么干的。
+最直接的选择当然是 $t\sim U[0,1]$ ——RF原文就是这么干的。
 
-它的问题不在"均匀"这个词本身，而在于——**在 $t$ 上均匀，并不等于在真正衡量"噪声强度"的那个量上均匀**。上一篇定义过log-SNR $\lambda_t=\log\frac{\alpha_t}{\sigma_t}$，对RF来说
+然而，当我们在 $t$ 上均匀采样的时候，我们究竟在做什么？回忆上一章里提过反向过程的ODE：
+
+$$
+\frac{\boldsymbol{x}_{t}}{\sigma_t} - \frac{\boldsymbol{x}_{s}}{\sigma_{s}} = \int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\boldsymbol{x}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda, \ t\in [0, s]
+$$
+
+在这里真正参与积分的并不是 $t$ ，而是 $\lambda$ ！对RF来说
 
 $$
 \lambda_t=\log\frac{1-t}{t}=-\operatorname{logit}(t)
@@ -58,130 +59,102 @@ $$
 p_\lambda(\lambda)=\Big|\frac{dt}{d\lambda}\Big|=\frac{e^{\lambda}}{(1+e^{\lambda})^2}
 $$
 
-这是一个标准logistic分布：钟形，中心在 $\lambda=0$（也就是 $t=0.5$），往两端 $\lambda\to\pm\infty$ 迅速衰减。
+这是一个logistic分布，它的中心在 $\lambda=0$（也就是 $t=0.5$），往两端 $\lambda\to\pm\infty$ 迅速衰减。
 
-也就是说，均匀撒 $t$ 其实已经隐含地把大量样本压在了中间噪声档（$t\approx0.5$），几乎不管两个端点——这本身是好事，因为 $t\to0$（几乎干净）和 $t\to1$（几乎纯噪声）这两头的回归目标太trivial，网络学不到什么，真正难、真正决定生成质量的是中间那段。
+也就是说，均匀采样 $t$ 隐含地把大量样本压在了中间噪声档（$t\approx0.5$），几乎不管两个端点——直觉上来说， $t\to0$（几乎干净）和 $t\to1$（几乎纯噪声）这两头的回归目标太trivial，网络学不到什么，真正难、真正决定生成质量的是中间那段。
 
-但既然uniform给出的是一个**写死的** logistic（中心、宽度都动不了），那自然的下一个问题就是：能不能让这个"中间钟形"的中心和宽度可调？
+### Logit-normal
 
-### logit-normal：让log-SNR服从高斯
-
-SD3[[1]][r1]给的答案是logit-normal。撒法极简单：先撒一个高斯，再用sigmoid压回 $[0,1]$：
+SD3[[1]][r1]带头走了另一条路：logit-normal。设定上，logit-normal分布把一个高斯用sigmoid压回 $[0,1]$：
 
 $$
-u\sim\mathcal N(m,s^2),\qquad t=\sigma(u)=\frac1{1+e^{-u}}
+u\sim\mathcal N(m,\tau^2),\qquad t=\sigma(u)=\frac1{1+e^{-u}}
 $$
 
-换元回 $t$，密度是
+$t$ 上的密度是
 
 $$
-\pi_{\text{ln}}(t;m,s)=\frac{1}{s\sqrt{2\pi}}\cdot\frac{1}{t(1-t)}\exp\!\Big(-\frac{(\operatorname{logit}(t)-m)^2}{2s^2}\Big)
+\pi_{\text{ln}}(t;m,\tau)=\frac{1}{\tau\sqrt{2\pi}}\cdot\frac{1}{t(1-t)}\exp\!\Big(-\frac{(\operatorname{logit}(t)-m)^2}{2\tau^2}\Big)
 $$
 
-$m$ 控制峰的位置（峰在 $t=\sigma(m)$，$m=0$ 时正好是 $0.5$），$s$ 控制集中程度。
-
-但它真正优雅的地方，要换到 $\lambda$ 上才看得出来。注意 $u=\operatorname{logit}(t)=-\lambda$，于是
+这玩意在 $t$ 上肮脏极了——但如果换到 $\lambda$ 上，注意到 $u=\operatorname{logit}(t)=-\lambda$，于是
 
 $$
-u\sim\mathcal N(m,s^2)\quad\Longleftrightarrow\quad \lambda\sim\mathcal N(-m,\,s^2)
+u\sim\mathcal N(m,\tau^2)\quad\Longleftrightarrow\quad \lambda\sim\mathcal N(-m,\,\tau^2)
 $$
 
-**logit-normal撒 $t$，等价于让log-SNR $\lambda$ 服从一个高斯。** 对比一下：uniform给的是一个固定的logistic$(0,1)$，logit-normal给的是一个可调中心、可调宽度的高斯 $\mathcal N(-m,s^2)$——无非是把那个写死的钟形换成一个能调参的钟形而已。SD3实验里最好的一档是 $m=0,s=1$，比uniform更集中在中间。
+所以——logit-normal的本质是要求 $\lambda$ 服从高斯分布。SD3 ablate了许多参数，最后选定 $m=0, \tau=1$ ——也就是标准gaussian。
 
-> 一旦把"撒 $t$"翻译成"撒 $\lambda$"，很多看着完全不同的采样方案其实都是同一族高斯，差别只在中心和宽度。这正是连续时间的好处——离散扩散那套按step编号撒 $t$ 的做法，是永远看不到这层的（
+### 那大家都用什么分布呢？
 
-### timestep shift：高分辨率的麻烦
+- **logit-normal派**：SD3/3.5、Wan[[5]][r5]（2.1和2.2都是 $m=0,\tau=1$）、Qwen-Image、MovieGen，以及JiT（取 $m=-0.8,\tau=0.8$）都在训练时按logit-normal采 $t$。
+- **uniform派**：FLUX[[6]][r6]就是 $t\sim U[0,1]$，把调节权全交给下一节要讲的timestep shift；跟随FLUX的Lumina-Image 2.0也是如此。
+- 甚至还有**mode派**：Cosmos 3[[10]][r10] ablate了一把，然后宣布 "we use logit-normal … for image, audio, and action … and mode sampling for video batches”。
 
-到目前为止的讨论都默认了一件事：给定 $t$，加进去的噪声"强度"是固定的。可这在高分辨率下不成立。
+### timestep shift
 
-直觉是这样：一张高分辨率图，相邻像素（latent）高度相关、冗余度极高。在同一个 $t$、同样的 $\sigma_t$ 下，往低分辨率图上加的噪声足以毁掉大半信息，但往高分辨率图上加同一量级的噪声，低频结构几乎纹丝不动——你downsample回去甚至看不出加过噪。换句话说，**分辨率越高，同一个 $t$ 对应的"有效信噪比"越高**，网络在高噪声端根本没被训练够。
+说来惭愧——在真正上手做diffusion之前，鸽子曾经一度产生过“一定存在一个完美的 $\pi(t)$ 吧，就和大多数人从来不改AdamW的超参数一样”的想法——然而，这其实只是错觉。
 
-补救办法叫timestep shift：把整条schedule往"更多噪声"的方向推。具体地，给一个shift factor $s>1$，把 $t$ 重映射成
+正如之前多次反复强调的，选 $t$ 的本质是选SNR，因此 $\pi(t)$ 的选择和任务本身息息相关。
+
+例如，在高分辨率下，相邻像素（或者latent）的冗余度极高[[2]][r2]。在同一个 $t$、同样的 $\sigma_t$ 下，往低分辨率图上加的噪声足以毁掉大半信息，但往高分辨率图上加同一量级的噪声，低频结构几乎纹丝不动——可能downsample回去甚至看不出加过噪。换句话说，分辨率越高，同一个 $t$ 对应的"有效信噪比"越高，网络在高噪声端根本没被训练够。
+
+于是，大家发明了timestep shift：把整条schedule往"更多噪声"的方向推。具体来说，对一个shift factor $s$，timestep shift设定上把 $t$ 重映射成
 
 $$
 t'=\frac{s\,t}{1+(s-1)\,t}
 $$
 
-这个变换固定 $0\mapsto0$、$1\mapsto1$，中间往 $1$（高噪声）那头拱。
+把这个curve画出来的话，可以发现它保证 $0\mapsto0$、$1\mapsto1$，中间往 $1$（高噪声）方向抬升。
 
-在 $t$-空间里看，这是个莫名其妙的Möbius变换；但老规矩，换到 $\lambda$ 上就现原形了。RF下
+在 $t$-空间里看，这是个莫名其妙的Möbius变换；但正如我们在本文里念了很多次的经，换元到 $\lambda$ 上，RF下
 
 $$
 \frac{\sigma'}{\alpha'}=\frac{t'}{1-t'}=\frac{s\,t}{1-t}=s\cdot\frac{\sigma}{\alpha}\quad\Longrightarrow\quad \lambda'=\lambda-\log s
 $$
 
-**timestep shift在 $t$ 上是个丑陋的分式变换，在log-SNR上不过是一个常数平移** $\lambda'=\lambda-\log s$——这才是"shift"这个名字的由来。$s>1$ 让 $\lambda$ 整体变小，即整体更noisy，正好补上高分辨率缺的那块高噪声训练。
+所以，timestep shift的本质是平移 $\lambda$ ！这就是为什么它叫"shift"。$s>1$ 让 $\lambda$ 整体变小，即整体更noisy。
 
-至于 $s$ 取多少：simple diffusion[[2]][r2]最早指出应该按分辨率平移log-SNR；SD3[[1]][r1]把它写成上面这个RF的timestep形式，并把shift factor跟token数挂钩（$s=\sqrt{m/n}$，$n,m$ 分别是参考、目标分辨率的token数）。而现代模型（Wan、Flux）在推理时具体怎么设这个 $s$，下一节一起讲。
+关于 $s$ 的具体取值，各家不一：
 
-### 一个更狠的统一，和一个例外
+- Wan[[5]][r5]里shift是个和分辨率以及任务都有关的常数。Wan2.1里t2v默认 $s=5$，i2v在480p降到 $s=3$（720p仍是5），而vace、flf2v（注：首尾帧生成视频）$s=16$；Wan2.2里（注：Wan 2.2有high-noise和low-noise两个expert，但两个expert共享shift）t2v用 $s=12$、i2v/ti2v用 $s=5$。可见“分辨率越高 $s$ 越大”只是最粗的规律，i2v/VACE这些带更多条件信息的任务，合适的噪声档位本来就不一样。Cosmos 2/2.5 作为换皮Wan也follow了Wan recipe。
+- SD3[[1]][r1]把shift factor跟分辨率挂钩：$s=\sqrt{m/n}$，其中 $n,m$ 分别是参考、目标分辨率的像素数（$H\times W$）。
+- FLUX[[6]][r6]让 $\mu=\log s$ 对token数 $L$ 取 $0.5$ ($L=256$)、$1.15$ ($L=4096$) 线性插值，也就是 $s=\exp\!\big(0.5+\tfrac{0.65}{3840}(L-256)\big)$。
+- Cosmos 3[[10]][r10]的 $s$ 按分辨率分档：pre-training 256p/480p/720p 取 $s=1/3/5$，mid-training则抬到 $3/5/10$。
 
-"采样=加权"这个观察还能再往前推一步。回想上一篇，x-loss、ε-loss、v-loss 三者只差一个 $t$ 相关的系数：
+## 推理时的Timestep Sampling
 
-$$
-\|\boldsymbol{\epsilon}_\theta-\boldsymbol{\epsilon}\|^2=e^{2\lambda_t}\|\boldsymbol{x}_\theta-\boldsymbol{x}_0\|^2,\qquad \|\boldsymbol{v}_\theta-\boldsymbol{v}\|^2=\alpha_t^2\dot\lambda_t^2\|\boldsymbol{x}_\theta-\boldsymbol{x}_0\|^2
-$$
+训练时我们摆脱了离散求和，但推理时却又不得不把连续ODE离散回有限步——每走一步都要调用一次网络 $\boldsymbol{v}_\theta$（拿它估计当前该往哪个方向去噪），所以一次生成要跑多少步，就等于要前向多少次网络。
+> 这个次数有个专门的名字叫 **NFE**（Number of Function Evaluations，函数求值次数）。蒸馏的终极目标就是把NFE压到个位数甚至1。
 
-所以选哪种 loss，无非是给最根本的 denoising loss $\|\boldsymbol{x}_\theta-\boldsymbol{x}_0\|^2$ 再乘一个已知的 $t$ 相关权重。把它和前面的 $\pi(t)$、$w(t)$ 摞在一起，整个训练目标就是
+给定NFE预算 $N$，我们要在 $[0,1]$ 上挑 $N{+}1$ 个节点 $1=t_0>t_1>\dots>t_N\approx0$ 来做累加。
 
-$$
-\mathcal{L}=\int \underbrace{\pi(t)}_{\text{采样}}\,\underbrace{w(t)}_{\text{显式权重}}\,\underbrace{g_{\text{loss}}(t)}_{\text{loss 类型}}\,\mathbb{E}\|\boldsymbol{x}_\theta-\boldsymbol{x}_0\|^2\,dt
-$$
+这里的关键是训推一致——推理通常会均匀的在 $[0,1]$ 上采网格，然后用和训练一致的 $s$ 做shift $t'=\frac{st}{1+(s-1)t}$ 。
 
-三个因子全乘进同一个有效权重，换元到 $\lambda$ 上就是一个 $w_{\text{eff}}(\lambda)$ 乘唯一那个 denoising loss。这正是 VDM++[[3]][r3] 的主旨：所有 diffusion 训练目标都是同一个东西在 $\lambda$ 上的加权积分，区别只在权重。
+这里其实藏了个容易混淆的点：**训练的采样密度 $\pi(t)$** 和 **推理的离散网格**根本不是一回事，"训推一致"也并不要求它俩同分布。
 
-> diffusers 干脆把"采样密度"和"loss 权重"两个函数用了同一个参数名 `weighting_scheme`（`compute_density_for_timestep_sampling` 和 `compute_loss_weighting_for_sd3`）——库自己都懒得区分，因为它俩本就是一回事（
+先说"训推一致"到底指什么——它指的是 $t\leftrightarrow$ 噪声档（SNR）的**映射**要对齐：训练时你用 shift-$s$ 的 schedule 教网络在某些噪声档去噪，推理时就得喂它同样 shift 过的噪声档。对齐的是 $s$（也就是 $\lambda$ 的平移量），而不是"每个档位放多少个点"。这一步 Wan 是一致的。
 
-但要小心：能塌进 weighting 的只是 **loss** 那一维。上一篇把 schema 拆成 prediction × loss 两个轴，这里塌缩的是 loss 轴；prediction 轴——网络到底 physically 吐 $\boldsymbol{x}_\theta$、$\boldsymbol{\epsilon}_\theta$ 还是 $\boldsymbol{v}_\theta$——是 **preconditioning**，塞不进任何标量权重。
+至于 $\pi(t)$ 和推理网格为什么是两码事：$\pi(t)$ 是个**重要性采样密度**——每个 SGD step 抽一个 $t$ 估梯度，往中间噪声档堆样本是为了在最难、信息量最大的地方压低梯度方差；而推理网格 $\{t_i\}$ 是对一条**固定 ODE 的数值求积**，节点该密在轨迹弯得最厉害的地方以压离散化误差。"哪里 loss 最有用"和"哪里 ODE 最需要细步"相关但不等同，谁也没规定要照抄对方的密度。
 
-把裸网络输出记作 $F_\theta$，我们总得用一个仿射映射把它反解成 $\boldsymbol{x}_0$ 的估计：
+那"logit-normal 上的均匀 sample"是什么？如果指 i.i.d. 抽样，那本身就自相矛盾（抽出来的点服从 logit-normal，怎么会 uniform）。真正想问的其实是**分位点网格（inverse-CDF grid）**：拿 uniform 网格 $u_i=i/N$，喂进 logit-normal 的逆 CDF $t_i=\sigma\!\big(m+\tau\,\Phi^{-1}(u_i)\big)$，得到一串"密在中间、稀在两端"的节点；$m=0,\tau=1$ 时就是把 uniform 网格先过标准正态分位、再过 sigmoid——换到 $\lambda$ 上，这就是一串**高斯分位点网格**。
 
-$$
-\boldsymbol{x}_\theta=c_{\text{skip}}(t)\,\boldsymbol{x}_t+c_{\text{out}}(t)\,F_\theta
-$$
+那"uniform 网格 + shift"和它差多少？回忆本文开头：uniform 的 $t$ 网格换到 $\lambda$ 上是 **logistic** 形状（$s$ 只是把它整体平移 $-\log s$），logit-normal 网格换到 $\lambda$ 上是 **gaussian** 形状——同一个套路，都在中间噪声档堆节点、两端稀疏，只是 logistic 尾巴更肥（方差 $\pi^2/3\approx3.3$，比 $\tau=1$ 的高斯宽），所以 uniform+shift 会比 logit-normal 分位网格稍微多铺一点到两端。
 
-x/ε/v-prediction 不过是三组写死的 $(c_{\text{skip}},c_{\text{out}})$：x-pred 是 $(0,1)$，ε-pred 是 $(\tfrac1{\alpha_t},-\tfrac{\sigma_t}{\alpha_t})$，RF 的 v-pred 是 $(1,-t)$——于是 $\boldsymbol{x}_\theta=\boldsymbol{x}_t-t\,\boldsymbol{v}_\theta$。这个映射决定了**裸网络在每个 $t$ 上要回归多大尺度的东西**（ε 的方差恒为 1，$\boldsymbol{x}_0$ 是数据方差，$\boldsymbol{v}$ 介于两者之间），也决定了 $c_{\text{skip}}$ 先把 $\boldsymbol{x}_t$ 里现成的部分扣掉、让网络只学残差（低噪声时 $t\boldsymbol{v}_\theta\to0$，几乎啥都不用干）。一个跨所有 $t$ 共享权重的网络，只有当输入/输出在每个 $t$ 都是 $O(1)$、且只需拟合"难的那部分残差"时才训得匀。而 $w(t)$ 缩放的是 loss 本身，动不了网络输出的尺度——这是两件事。
+一句话：**该一致的（shift $s$，即 SNR 映射）已经一致了；推理节点密度是另一个自由的 solver 超参**，uniform+shift 只是一个够用、且已经很接近 logit-normal 分位网格的默认选择——真想照训练的 logit-normal 铺网格也行（过一下逆 CDF 即可），只是差别不大，没人为这点收益专门去改。
 
-> **这里的 preconditioning 是什么意思？** 不是二阶 solver 里给线性系统左乘一个 $M^{-1}$ 那种——这里压根没有额外的矩阵。它是更一般的"换元"意义上的 preconditioning：挑一个可逆的变量替换，把问题的条件数压小。而这里的"矩阵"是 $M(t)=c(t)\,I$，一个**逐噪声档的标量**。
->
-> 被改善条件数的不是像素之间，而是 $t$ 这条连续轴：不同噪声档的目标/梯度天然差好几个数量级，Gauss–Newton 的 Hessian $H=\mathbb{E}\big[w(t)\,c_{\text{out}}(t)^2\,J_F^\top J_F\big]$（$J_F=\partial F_\theta/\partial\theta$）会被少数几个 $t$ 主导、把其余饿死。EDM[[4]][r4] 挑 $c_{\text{in}},c_{\text{out}},c_{\text{skip}}$ 让每个 $t$ 上输入、目标都是单位方差、且 $w(t)c_{\text{out}}^2$ 拉平成常数，$H$ 对 $t$ 的依赖就被压平了。噪声档之间是解耦的回归任务，最优 preconditioner 天然就是对角（标量）的，压根不会冒出耦合坐标的稠密矩阵——这也是它看着不像矩阵的原因。严格说，这是 ML 里"把输入/输出 normalize 一下"那一路的 preconditioning（和你为什么要标准化特征、上 BatchNorm 同源），确实把 GN 系统的 $\kappa$ 压了下去，但不是 Krylov solver 里那种耦合坐标的 $M$。
+## 番外：Wan 2.2的MoE
 
-## solver 超参：推理时的旋钮
+先看 Wan 2.2 的 MoE 是什么：它把一个 dense DiT 拆成两个各约 14B 的专家——**high-noise expert** 管去噪早期（$t$ 大、噪声重、SNR 最低那段，负责整体 layout），**low-noise expert** 管后期（$t$ 小，负责细节）。切换点定在一个 SNR 阈值 $t_{\text{moe}}$（官方说取"$\text{SNR}_{\min}$ 的一半"对应的那一步），$t<t_{\text{moe}}$ 就换到 low-noise 专家。因为任一步只激活一个专家，总参数 27B 但每步只跑 14B，推理开销和显存跟单个 dense 模型基本一样——MoE 在这里买的是**容量**，不是算力。
 
-有意思的是，训练时我们庆幸摆脱了离散求和，推理时却又不得不把连续ODE离散回有限步——只不过这次离散化是我们**主动、可控**地挑的。上一篇最后停在：RF的反向过程是一个（probability-flow）ODE，把它的解析解
+那和 timestep shift 有关吗？**说没直接关系也对**——Wan 的文档里没把这两件事挂钩，$t_{\text{moe}}$ 纯按 SNR 定，跟那个手设的 shift $s$ 没有公式上的联系。**但说毫无关系也不对**：它俩其实是同一个观察的两种应对。这一整节反复念的经是"噪声轴不均匀，不同 $\lambda$/SNR 档位是性质不同的子任务"——timestep shift 是拿一个标量把整条 schedule 沿 $\lambda$ 平移，让一个共享网络的力气挪到合适的档位；MoE 则更激进，干脆承认"一个网络在整条噪声轴上当通才太难"，直接在 SNR 轴上切一刀、给 high/low 两段各配一套权重。一个是"移"，一个是"切"，出发点都是噪声轴的异质性。
 
-$$
-\frac{\boldsymbol{x}_t}{\sigma_t}-\frac{\boldsymbol{x}_s}{\sigma_s}=\int_{\lambda_s}^{\lambda_t}e^{\lambda}\hat{\boldsymbol{x}}_\theta\,d\lambda
-$$
+（再多想一层：Wan 2.2 T2V 把 shift 从 2.1 的 5 一路抬到 12，是在往高噪声端多铺采样；MoE 又给高噪声段单独配了个专家——两件事在"高噪声那段才是定结构、值得下本钱的地方"这点上是同一种直觉，尽管官方没把话挑明。）
 
-用一阶Euler去离散，就得到DDIM。但"用Euler解这个积分"里其实藏了好几个还没定的超参，挨个看。
+（小订正：高低两个 denoiser 是 Wan **2.2** 的事——2.1 是单个 dense denoiser，没有高低之分。）那这俩专家的 shift $s$ 一致吗？**一致**——$s$ 是**整条 schedule 的属性**，不是某个专家的。官方一个 A14B 模型只有一个 `sample_shift`（t2v $=12$、i2v/ti2v $=5$）：推理时先拿它把 schedule 整体 shift、`set_timesteps` 一次建完，再在去噪循环里纯按当前 timestep 和 boundary（t2v 切换点 $\approx0.875$、i2v $\approx0.9$）决定这一步喂哪个专家——两个专家吃的是同一条 shift 过的 schedule 的不同区段，自然共享同一个 $s$。
 
-### 步点放哪：discretization schedule
+而且这是个**主动的设计选择**：同一份 config 里 `sample_guide_scale`（CFG 尺度）就是**按专家分开的二元组**（比如 t2v 的 low/high 取 $(3.0,4.0)$），可见他们完全能把 shift 也拆成两个、但没这么做。（ComfyUI 把两个专家建成两个模型节点，于是给你两个 shift 输入框，官方模板里都填一样的 $5$；硬给高/低段设不同 shift 也能跑，是社区常见魔改，不是官方默认。）
 
-给定NFE预算 $N$，我们要在 $[0,1]$ 上挑 $N{+}1$ 个节点 $1=t_0>t_1>\dots>t_N\approx0$。这就是推理版的"$t$ 怎么撒"——和训练时如出一辙，只不过训练撒的是连续分布 $\pi(t)$，推理撒的是有限个离散步点。最朴素的两种：uniform-$t$（$t_i=1-i/N$，最省事）和uniform-$\lambda$（在log-SNR上等距；既然上一篇那个积分本来就是对 $\lambda$ 写的，等距 $\lambda$ 才是"配得上积分"的那种均匀）。
-
-而现代模型（Flux、Wan这批）实际怎么排，其实就一句话：**uniform-$t$ 网格 + 一个shift**，也就是上一节那个 $t'=\frac{st}{1+(s-1)t}$。区别只在这个 $s$ 从哪来：
-
-- **Wan**[[5]][r5] 用**静态**shift：按分辨率手动设一个标量（官方推荐480p取 $s\approx3$、720p取 $s\approx5$），整条采样一把梭到底。
-- **FLUX**[[6]][r6] 用**动态**shift：把 $\mu=\log s$ 设成图像token数（序列长度 $L$）的仿射函数，在 $256^2$ 到 $1024^2$ 之间线性插值——分辨率一变，shift自动跟着走，不用手调。
-
-两者骨子里是同一件事：$\lambda'=\lambda-\log s$，把有限的NFE整体往高噪声端挪。RF之前，schedule是一整墙花活（上一篇那张图）；RF之后，就压缩成了"一条直线 + 一个shift标量"。现代扩散的采样schedule，基本就剩这一个旋钮。
-
-> 步点撒法对few-step（$N\le8$）影响巨大，对many-step几乎无所谓——步够多时怎么撒都收敛到同一条轨迹。所以只有当你想省NFE时，这个shift才值得较真。
-
-### 用几阶：Euler 一统天下
-
-Euler是一阶，也是现在事实上的唯一答案。理论上阶数是可调的——Heun（2阶）、RK4，以及上一篇提过的DPM-Solver系列，都是更高阶的选项，靠每步多采几个点估计轨迹曲率来压低单步误差。但RF把轨迹拉直之后，一阶截断误差本就小得可怜，高阶那点收益抵不过每步翻倍的NFE，于是高阶solver在RF时代基本退役了。
-
-> 还有一个更隐蔽的原因让高阶失宠：高阶solver假设网络预测的是**真** velocity 场，"多采点估曲率"才成立。可一旦开了CFG，被解的其实是一个被guidance拧过、并不对应任何真实score的场，高阶的收益直接打折——这也是"Euler + CFG"经久不衰、几乎成了现代扩散标配的原因之一。
-
-### 要不要随机：ODE ↔ SDE
-
-到目前为止解的都是deterministic的PF-ODE。但同一组marginal $q_t$，对应的反向过程其实是一整个**单参数族**[[7]][r7]：一端是PF-ODE（全确定），另一端是把噪声原样加回去的reverse SDE（DDPM那种），中间由一个"每步注入多少噪声"的旋钮连续插值——它们共享同一个score，只是越往SDE那端，多出来的score-correction项越强。最常见的记法是DDIM的 $\eta$[[8]][r8]：$\eta=0$ 是确定性ODE，$\eta=1$ 是ancestral（DDPM）采样，中间连续过渡。
-
-要不要随机本是个实打实的trade-off：SDE那端有**自我纠错**的性质——每步重新注入的噪声能冲掉之前累积的离散化/score误差，NFE给够时样本常常更干净；但它需要更多步，也引入额外方差。ODE那端在few-step时更稳，而且轨迹可逆（做inversion/图像编辑时只能用ODE）。而现代RF（Flux、Wan那批）几乎清一色把这个旋钮拧到了0，老实待在确定性ODE这端——实践里绝大多数就是Euler。随机采样如今更多是few-step蒸馏和一些ancestral trick里才会碰的东西了。
-
-> 严格说一句：CFG的guidance scale **不算** solver超参——它改的是被积的那个场本身（把 $\boldsymbol{v}_\theta$ 换成 $\boldsymbol{v}_\theta^{\text{uncond}}+w\,(\boldsymbol{v}_\theta^{\text{cond}}-\boldsymbol{v}_\theta^{\text{uncond}})$），而不是解ODE的方式。它以及它的一票精修（guidance interval、CFG rescale、zero-terminal-SNR……）值得单开一段甚至一篇，这里先按下不表。
 
 ## Reference
 
@@ -191,8 +164,10 @@ Euler是一阶，也是现在事实上的唯一答案。理论上阶数是可调
 4. Tero Karras, Miika Aittala, Timo Aila, and Samuli Laine. Elucidating the design space of diffusion-based generative models. In NeurIPS, 2022. [arXiv:2206.00364][r4]
 5. Wan Team, Alibaba. Wan: Open and advanced large-scale video generative models. arXiv preprint, 2025. [arXiv:2503.20314][r5]
 6. Black Forest Labs. FLUX.1. 2024. [github.com/black-forest-labs/flux][r6]
-7. Yang Song, Jascha Sohl-Dickstein, Diederik P. Kingma, Abhishek Kumar, Stefano Ermon, and Ben Poole. Score-based generative modeling through stochastic differential equations. In ICLR, 2021. [arXiv:2011.13456][r7]
-8. Jiaming Song, Chenlin Meng, and Stefano Ermon. Denoising diffusion implicit models. In ICLR, 2021. [arXiv:2010.02502][r8]
+7. Tim Salimans and Jonathan Ho. Progressive distillation for fast sampling of diffusion models. In ICLR, 2022. [arXiv:2202.00512][r7]
+8. Shanchuan Lin, Bingchen Liu, Jiashi Li, and Xiao Yang. Common diffusion noise schedules and sample steps are flawed. In WACV, 2024. [arXiv:2305.08891][r8]
+9. Tianhong Li and Kaiming He. Back to basics: Let denoising generative models denoise. In CVPR, 2026. [arXiv:2511.13720][r9]
+10. NVIDIA. Cosmos 3: Omnimodal world models for Physical AI. arXiv preprint, 2026. [arXiv:2606.02800][r10]
 
 [r1]: https://arxiv.org/abs/2403.03206
 [r2]: https://arxiv.org/abs/2301.11093
@@ -200,5 +175,7 @@ Euler是一阶，也是现在事实上的唯一答案。理论上阶数是可调
 [r4]: https://arxiv.org/abs/2206.00364
 [r5]: https://arxiv.org/abs/2503.20314
 [r6]: https://github.com/black-forest-labs/flux
-[r7]: https://arxiv.org/abs/2011.13456
-[r8]: https://arxiv.org/abs/2010.02502
+[r7]: https://arxiv.org/abs/2202.00512
+[r8]: https://arxiv.org/abs/2305.08891
+[r9]: https://arxiv.org/abs/2511.13720
+[r10]: https://arxiv.org/abs/2606.02800

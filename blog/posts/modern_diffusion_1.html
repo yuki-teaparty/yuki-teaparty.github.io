@@ -49,6 +49,12 @@
       <a class="sidebar__home" href="/">← 回主页</a>
       <nav class="sidebar__nav">
         <div class="sidebar__group">
+          <p class="sidebar__heading">未分类系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link" href="/blog/posts/modern_diffusion_3.html">modern_diffusion_3</a></li>
+          </ul>
+        </div>
+        <div class="sidebar__group">
           <p class="sidebar__heading">家用现代扩散模型速成系列</p>
           <ul class="sidebar__list">
             <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/modern_diffusion_1.html">家用现代扩散模型速成 (1)：从Diffusion到Rectified Flow</a></li>
@@ -89,9 +95,7 @@
 <p>鸽子做了好几年的某个细分3DV领域最近被大模型当路边一条踹死了——虽然过程有些曲折，但2026年的鸽子真的开始做Diffusion了（）</p>
 <p>回看23年还非常naïve的鸽子作为纯数学爱好者写的《家用扩散模型》系列，感觉真是恍若隔世——如果23年的鸽子热情拥抱Diffusion，而不是在3DV上吊死，也许一切都会变得不一样...</p>
 <p>最近读了nvidia的rCM<a href="https://arxiv.org/abs/2510.08431">[1]</a>/Causal rCM<a href="https://arxiv.org/abs/2606.25473">[2]</a>。它有一个很好的综述——而且由于一作出自TSAIL，因此所用的符号和之前DPM-Solver<a href="https://arxiv.org/abs/2206.00927">[3]</a>完全一致，感觉又回到了23年读DPM的快乐时光——因此借着这个契机，这次尝试自学一下diffusion比较新的进度，计划一路写到能读懂Causal rCM为止。</p>
-<p>由于时代变了很多，因此干脆决定重开一个系列：这次就叫《家用现代扩散模型速成》好了。
-之前乱糟糟的老文章应该也会逐渐清理一下。</p>
-<p>// 另外，鸽子给自己做了个主页 <a href="https://nozomizore.com/">https://nozomizore.com/</a> 欢迎扩列</p>
+<p>由于时代变了很多，因此干脆决定重开一个系列：这次就叫《家用现代扩散模型速成》好了。</p>
 <h2 id="Recap%EF%BC%9A2022%E5%B9%B4%E7%9A%84Diffusion-Model" tabindex="-1"><a class="header-anchor" href="#Recap%EF%BC%9A2022%E5%B9%B4%E7%9A%84Diffusion-Model">Recap：2022年的Diffusion Model</a></h2>
 <p>（读了这个就不用读之前的《家用扩散模型》了）</p>
 <p>在2022年，一个diffusion的正向过程如下：</p>
@@ -153,7 +157,7 @@ $\(
 <p>RF原文给出了一种解法，叫 <strong>reflow</strong>：用当前模型把噪声 \(\boldsymbol{\epsilon}\) 沿 ODE 跑出对应的 \(\boldsymbol{x}_0\)，再拿这批模型自己&quot;连&quot;好的 \((\boldsymbol{x}_0,\boldsymbol{\epsilon})\) 配对重训一个新的 RF。新配对不再交叉，边际流随之被<strong>拉直</strong>（rectified）；反复迭代，轨迹越来越接近直线。这就是rectified这个名字的来源。</p>
 </blockquote>
 <p>接近直线的轨迹有什么好处呢？好处就是一阶方法（一阶方法是linear的，对RF来说就退化成 \(\boldsymbol{x}_t=\boldsymbol{x}_s+(t-s)\,\boldsymbol{v}_\theta(\boldsymbol{x}_s,s)\) ）的误差小。
-自从Rectified Flow一统江湖之后（自从Stable Diffusion 3开始，现代diffusion比如Wan和FLUX都只用RF了），大家的solver彻底换成了Euler，高阶solver则冷门了不少。</p>
+自从Rectified Flow一统江湖之后（从Stable Diffusion 3开始，现代diffusion比如Wan和FLUX都只用RF了），大家的solver彻底换成了Euler，高阶solver则冷门了不少。</p>
 <blockquote>
 <p>虽然其实在有RF之前，大多数人也是用DDIM的...</p>
 </blockquote>

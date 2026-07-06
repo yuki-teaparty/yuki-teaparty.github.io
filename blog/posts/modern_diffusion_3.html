@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>modern_diffusion_3 · 老鸽子茶话会</title>
+  <meta name="description" content="">
+
+  <meta property="og:title" content="modern_diffusion_3">
+  <meta property="og:description" content="">
+  <meta property="og:type" content="article">
+
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/blog.css">
+
+  <!-- MathJax v3（运行时渲染；\bm 等非标准宏在 macros 里补齐）-->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        tags: 'none',
+        macros: { bm: ['\\boldsymbol{#1}', 1] }
+      },
+      svg: { fontCache: 'global' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body class="has-sidebar">
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="文章目录" aria-controls="sidebar" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="文章目录">
+    <div class="sidebar__inner">
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
+      <a class="sidebar__home" href="/">← 回主页</a>
+      <nav class="sidebar__nav">
+        <div class="sidebar__group">
+          <p class="sidebar__heading">未分类系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/modern_diffusion_3.html">modern_diffusion_3</a></li>
+          </ul>
+        </div>
+        <div class="sidebar__group">
+          <p class="sidebar__heading">家用现代扩散模型速成系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link" href="/blog/posts/modern_diffusion_1.html">家用现代扩散模型速成 (1)：从Diffusion到Rectified Flow</a></li>
+          </ul>
+        </div>
+        <div class="sidebar__group">
+          <p class="sidebar__heading">家用扩散模型系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="page">
+
+    <nav class="topnav" aria-label="主导航">
+      <a class="topnav__link" href="/">Home</a>
+      <a class="topnav__link is-active" href="/blog/">Blog</a>
+    </nav>
+
+    <article class="post reveal">
+      <header class="post__header">
+        <h1 class="post__title">modern_diffusion_3</h1>
+        <p class="post__meta">
+          <span class="post__date"></span>
+        </p>
+      </header>
+
+      <div class="post__body">
+        <h1 id="consistency-distillation%EF%BC%88%E4%B8%8A%EF%BC%89" tabindex="-1"><a class="header-anchor" href="#consistency-distillation%EF%BC%88%E4%B8%8A%EF%BC%89">consistency distillation（上）</a></h1>
+<h2 id="Recap%3A-2023%E5%B9%B4%E7%9A%84(discrete)-Consistency-Models-(dCM)" tabindex="-1"><a class="header-anchor" href="#Recap%3A-2023%E5%B9%B4%E7%9A%84(discrete)-Consistency-Models-(dCM)">Recap: 2023年的(discrete) Consistency Models (dCM)</a></h2>
+<p>TL; DR：它是一个 v-pred、x-loss，然后<strong>在同一条 PF-ODE 轨迹的相邻两点上强制自洽</strong>。</p>
+<p>具体地，dCM 在 \([\epsilon, T]\) 上取一串离散节点 \(\epsilon=t_1&lt;t_2&lt;\dots&lt;t_N=T\)，学一个 consistency function \(\boldsymbol f_\theta(\boldsymbol x_t, t)\)，要求它把同一条 PF-ODE 轨迹上的任意点都映回同一个起点（干净数据），并带边界条件 \(\boldsymbol f_\theta(\boldsymbol x_\epsilon, \epsilon)=\boldsymbol x_\epsilon\)。训练目标就是让轨迹上相邻两节点的预测对齐：</p>
+<div class="math-display">\[\mathcal L_{\text{dCM}}=\mathbb E_{n,\,\boldsymbol x_0,\,\boldsymbol\epsilon}\Big[\lambda(t_n)\,d\big(\boldsymbol f_\theta(\boldsymbol x_{t_{n+1}},t_{n+1}),\ \boldsymbol f_{\theta^-}(\hat{\boldsymbol x}_{t_n},t_n)\big)\Big]\]</div>
+<p>其中 \(\hat{\boldsymbol x}_{t_n}\) 是从 \(\boldsymbol x_{t_{n+1}}\) 出发、拿预训练 teacher 跑一步 ODE solver 得到的相邻（更干净）的点；\(\theta^-=\operatorname{stopgrad}(\operatorname{EMA}(\theta))\) 是 target 网络；\(d\) 是个距离度量（\(\ell_2\) / LPIPS / 后来 iCM 用的 Pseudo-Huber）。所谓 &quot;x-loss&quot;，就是这个 \(d\) 直接度量在 clean-\(\boldsymbol x\) 空间上——两端各自先把网络的 v 输出换算成 \(\boldsymbol x_0\) 预测，再比。轨迹相邻两点一旦处处对齐，\(\boldsymbol f_\theta\) 就等于&quot;一步跳到 \(\epsilon\)&quot;，于是推理时 1 次 NFE 就能出图。</p>
+<p>详细的介绍见《家用扩散模型》。</p>
+<h2 id="Continuous-time-CMs-(sCM)" tabindex="-1"><a class="header-anchor" href="#Continuous-time-CMs-(sCM)">Continuous-time CMs (sCM)</a></h2>
+<h2 id="Consistenty-Trajectory-Models-(CTM)" tabindex="-1"><a class="header-anchor" href="#Consistenty-Trajectory-Models-(CTM)">Consistenty Trajectory Models (CTM)</a></h2>
+<h2 id="MeanFlow" tabindex="-1"><a class="header-anchor" href="#MeanFlow">MeanFlow</a></h2>
+<h2 id="Improved-MeanFlow-(iMF)" tabindex="-1"><a class="header-anchor" href="#Improved-MeanFlow-(iMF)">Improved MeanFlow (iMF)</a></h2>
+<h2 id="References" tabindex="-1"><a class="header-anchor" href="#References">References</a></h2>
+
+      </div>
+    </article>
+
+    <nav class="post-nav-bottom">
+      <span></span>
+      <span></span>
+    </nav>
+
+    <footer class="footer post__footer">
+      
+      <p>© 老鸽子茶话会 · made with 🍵</p>
+    </footer>
+
+  </main>
+
+  <script src="/assets/js/main.js"></script>
+  <script src="/assets/js/blog.js"></script>
+</body>
+
+</html>

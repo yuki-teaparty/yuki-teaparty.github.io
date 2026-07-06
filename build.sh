@@ -24,9 +24,11 @@ echo "✓ 编译完成"
 
 if [ "${1:-}" = "--serve" ] || [ "${1:-}" = "-s" ]; then
   PORT="${2:-8765}"
+  # macOS 通常只有 python3，没有裸 python：优先用 python3
+  PY="$(command -v python3 || command -v python)"
   # 后台延迟开浏览器（用 python 的 webbrowser，跨平台可靠）
-  ( sleep 1; python -m webbrowser -t "http://localhost:$PORT/blog/" >/dev/null 2>&1 || true ) &
+  ( sleep 1; "$PY" -m webbrowser -t "http://localhost:$PORT/blog/" >/dev/null 2>&1 || true ) &
   echo "预览：http://localhost:$PORT/  —— 按 Ctrl+C 停止"
   # 根目录服务，绝对路径 /assets /blog 才能正确解析
-  python -m http.server "$PORT"
+  "$PY" -m http.server "$PORT"
 fi
