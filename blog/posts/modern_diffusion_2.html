@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>家用现代扩散模型速成 (2)：Weighting Scheme · 老鸽子茶话会</title>
+  <meta name="description" content="关于diffusion中t的采样，以及更多">
+
+  <meta property="og:title" content="家用现代扩散模型速成 (2)：Weighting Scheme">
+  <meta property="og:description" content="关于diffusion中t的采样，以及更多">
+  <meta property="og:type" content="article">
+
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/blog.css">
+
+  <!-- MathJax v3（运行时渲染；\bm 等非标准宏在 macros 里补齐）-->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        tags: 'none',
+        macros: { bm: ['\\boldsymbol{#1}', 1] }
+      },
+      svg: { fontCache: 'global' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+
+<body class="has-sidebar">
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="文章目录" aria-controls="sidebar" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="文章目录">
+    <div class="sidebar__inner">
+      <a class="sidebar__brand" href="/blog/">🍵老鸽子茶话会</a>
+      <a class="sidebar__home" href="/">← 回主页</a>
+      <nav class="sidebar__nav">
+        <div class="sidebar__group">
+          <p class="sidebar__heading">未分类系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link" href="/blog/posts/modern_diffusion_3.html">modern_diffusion_3</a></li>
+          </ul>
+        </div>
+        <div class="sidebar__group">
+          <p class="sidebar__heading">家用现代扩散模型速成系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link" href="/blog/posts/modern_diffusion_1.html">家用现代扩散模型速成 (1)：从Diffusion到Rectified Flow</a></li>
+            <li><a class="sidebar__link is-current" aria-current="page" href="/blog/posts/modern_diffusion_2.html">家用现代扩散模型速成 (2)：Weighting Scheme</a></li>
+          </ul>
+        </div>
+        <div class="sidebar__group">
+          <p class="sidebar__heading">家用扩散模型系列</p>
+          <ul class="sidebar__list">
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-1-sde.html">家用扩散模型 (1)：SDE从入门到弃疗</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-1p5-ode.html">家用扩散模型 (1.5)：从SDE到ODE</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-1p7-samplers.html">家用扩散模型 (1.7)：2022年的采样算法</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-2-ldm.html">家用扩散模型 (2)：Latent Diffusion Model</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-2p1-vsd.html">家用扩散模型 (2.1)：Variational Score Distillation</a></li>
+            <li><a class="sidebar__link" href="/blog/posts/diffusion-2p2-lcm.html">家用扩散模型 (2.2)：Latent Consistency Models</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="page">
+
+    <nav class="topnav" aria-label="主导航">
+      <a class="topnav__link" href="/">Home</a>
+      <a class="topnav__link is-active" href="/blog/">Blog</a>
+    </nav>
+
+    <article class="post reveal">
+      <header class="post__header">
+        <h1 class="post__title">家用现代扩散模型速成 (2)：Weighting Scheme</h1>
+        <p class="post__meta">
+          <span class="post__date">2026-06-30 22:00</span>
+        </p>
+      </header>
+
+      <div class="post__body">
+        <h2 id="%E4%BB%80%E4%B9%88%E6%98%AFWeighting-scheme" tabindex="-1"><a class="header-anchor" href="#%E4%BB%80%E4%B9%88%E6%98%AFWeighting-scheme">什么是Weighting scheme</a></h2>
+<p>我们考虑作为一个条件期望的diffusion loss。以RF的v-loss为例：</p>
+<div class="math-display">\[\mathcal{L}= \mathbb{E}_{t\sim\pi(t)} [\ell(t)] :=\mathbb{E}_{t\sim\pi(t)}\;\mathbb{E}_{\boldsymbol{x}_0,\boldsymbol{\epsilon}}\big[\,\|\boldsymbol{v}_\theta(\boldsymbol{x}_t,t)-\boldsymbol{v}\|^2\,\big]\]</div>
+<p>其中 \(\pi(t)\) 是 \(t\) 的分布。显然， \(\pi(t)\) 是一个超参数。</p>
+<p>古代diffusion比如DDPM里，t是离散且预定义的有限长数组，因此条件期望退化为 \(\mathcal{L}=\frac1N\sum_{i=1}^N \ell(t_i)\) ，t的选取突出一个百花齐放（感兴趣的可以倒回去看上一章里EDM<a href="https://arxiv.org/abs/2206.00364">[4]</a>截图那个表）。</p>
+<p>但对连续的现代diffusion（上一章我们展示了diffusion和flow matching本质是一回事，以后我们就都叫diffusion了），条件期望是一个积分：</p>
+<div class="math-display">\[\mathbb{E}_{t\sim\pi}[\ell(t)]=\int_0^1 \pi(t)\,\ell(t)\,dt\]</div>
+<p>注意到根据条件期望的定义，我们其实有</p>
+<div class="math-display">\[\int_0^1 \pi(t)\,\ell(t)\,dt=\mathbb{E}_{t\sim U[0,1]}\big[\pi(t)\,\ell(t)\big]\]</div>
+<p>所以，选取 \(\pi(t)\) 相当于固定 \(t\sim U[0,1]\) 时，选取diffusion loss的weighting<a href="https://arxiv.org/abs/2303.00848">[3]</a>。
+这也就是为什么 \(\pi(t)\) 在huggingface的diffusers库里叫weighting scheme。</p>
+<blockquote>
+<p>weighting_scheme的选项包括 <code>logit_normal</code>、<code>mode</code>、<code>sigma_sqrt</code>、<code>cosmap</code>、和<code>none</code>。<code>logit_normal</code>/<code>mode</code> 控制的是采样密度 \(\pi(t)\)，而 <code>sigma_sqrt</code>/<code>cosmap</code> 控制的是 weight，可见两者确实是完全不分的。</p>
+</blockquote>
+<h3 id="Uniform%EF%BC%88%E4%B9%9F%E5%B0%B1%E6%98%AF%22none%22%EF%BC%89" tabindex="-1"><a class="header-anchor" href="#Uniform%EF%BC%88%E4%B9%9F%E5%B0%B1%E6%98%AF%22none%22%EF%BC%89">Uniform（也就是&quot;none&quot;）</a></h3>
+<p>最直接的选择当然是 \(t\sim U[0,1]\) ——RF原文就是这么干的。</p>
+<p>然而，当我们在 \(t\) 上均匀采样的时候，我们究竟在做什么？回忆上一章里提过反向过程的ODE：</p>
+<div class="math-display">\[\frac{\boldsymbol{x}_{t}}{\sigma_t} - \frac{\boldsymbol{x}_{s}}{\sigma_{s}} = \int_{\lambda_{s}}^{\lambda_{t}}e^{\lambda}\hat{\boldsymbol{x}}_{\theta}(\hat{\boldsymbol{x}}_{\lambda},\lambda)d\lambda, \ t\in [0, s]\]</div>
+<p>在这里真正参与积分的并不是 \(t\) ，而是 \(\lambda\) ！对RF来说</p>
+<div class="math-display">\[\lambda_t=\log\frac{1-t}{t}=-\operatorname{logit}(t)\]</div>
+<p>把 \(t\sim U[0,1]\) 换元到 \(\lambda\)，密度是</p>
+<div class="math-display">\[p_\lambda(\lambda)=\Big|\frac{dt}{d\lambda}\Big|=\frac{e^{\lambda}}{(1+e^{\lambda})^2}\]</div>
+<p>这是一个logistic分布，它的中心在 \(\lambda=0\)（也就是 \(t=0.5\)），往两端 \(\lambda\to\pm\infty\) 迅速衰减。</p>
+<p>也就是说，均匀采样 \(t\) 隐含地把大量样本压在了中间噪声档（\(t\approx0.5\)），几乎不管两个端点——直觉上来说， \(t\to0\)（几乎干净）和 \(t\to1\)（几乎纯噪声）这两头的回归目标太trivial，网络学不到什么，所以网络需要bias on中间的部分。</p>
+<h3 id="Logit-normal" tabindex="-1"><a class="header-anchor" href="#Logit-normal">Logit-normal</a></h3>
+<p>SD3<a href="https://arxiv.org/abs/2403.03206">[1]</a>带头走了另一条路：logit-normal。设定上，logit-normal分布把一个高斯用sigmoid压回 \([0,1]\)：</p>
+<div class="math-display">\[u\sim\mathcal N(m,\tau^2),\qquad t=\sigma(u)=\frac1{1+e^{-u}}\]</div>
+<p>\(t\) 上的密度是</p>
+<div class="math-display">\[\pi_{\text{ln}}(t;m,\tau)=\frac{1}{\tau\sqrt{2\pi}}\cdot\frac{1}{t(1-t)}\exp\!\Big(-\frac{(\operatorname{logit}(t)-m)^2}{2\tau^2}\Big)\]</div>
+<p>这玩意在 \(t\) 上肮脏极了——但如果换到 \(\lambda\) 上，注意到 \(u=\operatorname{logit}(t)=-\lambda\)，于是</p>
+<div class="math-display">\[u\sim\mathcal N(m,\tau^2)\quad\Longleftrightarrow\quad \lambda\sim\mathcal N(-m,\,\tau^2)\]</div>
+<p>所以——logit-normal的本质是要求 \(\lambda\) 服从高斯分布。SD3 ablate了许多参数，最后选定 \(m=0, \tau=1\) ——也就是标准gaussian。</p>
+<h3 id="%E9%82%A3%E5%A4%A7%E5%AE%B6%E9%83%BD%E7%94%A8%E4%BB%80%E4%B9%88%E5%88%86%E5%B8%83%E5%91%A2%EF%BC%9F" tabindex="-1"><a class="header-anchor" href="#%E9%82%A3%E5%A4%A7%E5%AE%B6%E9%83%BD%E7%94%A8%E4%BB%80%E4%B9%88%E5%88%86%E5%B8%83%E5%91%A2%EF%BC%9F">那大家都用什么分布呢？</a></h3>
+<ul>
+<li><strong>logit-normal派</strong>：SD3/3.5、Wan<a href="https://arxiv.org/abs/2503.20314">[5]</a>（2.1和2.2都是 \(m=0,\tau=1\)）、Qwen-Image<a href="https://arxiv.org/abs/2508.02324">[7]</a>、MovieGen<a href="https://arxiv.org/abs/2410.13720">[8]</a>，以及JiT<a href="https://arxiv.org/abs/2511.13720">[9]</a>（取 \(m=-0.8,\tau=0.8\)）都在训练时按logit-normal采 \(t\)。</li>
+<li><strong>uniform派</strong>：FLUX<a href="https://github.com/black-forest-labs/flux">[6]</a>就是 \(t\sim U[0,1]\)，把调节权全交给下一节要讲的timestep shift；跟随FLUX的Lumina-Image 2.0<a href="https://arxiv.org/abs/2503.21758">[11]</a>也是如此。</li>
+<li>甚至还有<strong>mode派</strong>：Cosmos 3<a href="https://arxiv.org/abs/2606.02800">[10]</a> ablate了一把，然后宣布 &quot;we use logit-normal … for image, audio, and action … and mode sampling for video batches”。</li>
+</ul>
+<h3 id="timestep-shift" tabindex="-1"><a class="header-anchor" href="#timestep-shift">timestep shift</a></h3>
+<p>说来惭愧——在真正上手做diffusion之前，鸽子曾经一度产生过“一定存在一个完美的 \(\pi(t)\) 吧，就和大多数人从来不改AdamW的超参数一样”的想法——然而，这其实只是错觉。</p>
+<p>正如之前多次反复强调的，选 \(t\) 的本质是选SNR，因此 \(\pi(t)\) 的选择和任务本身息息相关。</p>
+<p>例如，在高分辨率下，相邻像素（或者latent）的冗余度极高<a href="https://arxiv.org/abs/2301.11093">[2]</a>。在同一个 \(t\)、同样的 \(\sigma_t\) 下，往低分辨率图上加的噪声足以毁掉大半信息，但往高分辨率图上加同一量级的噪声，低频结构几乎纹丝不动——可能downsample回去甚至看不出加过噪。换句话说，分辨率越高，同一个 \(t\) 对应的&quot;有效信噪比&quot;越高，网络在高噪声端根本没被训练够。</p>
+<p>于是，大家发明了timestep shift：把整条schedule往&quot;更多噪声&quot;的方向推。具体来说，对一个shift factor \(s\)，timestep shift设定上把 \(t\) 重映射成</p>
+<div class="math-display">\[t'=\frac{s\,t}{1+(s-1)\,t}\]</div>
+<p>把这个curve画出来的话，可以发现它保证 \(0\mapsto0\)、\(1\mapsto1\)，中间往 \(1\)（高噪声）方向抬升。</p>
+<p>在 \(t\)-空间里看，这是个莫名其妙的Möbius变换；但正如我们在本文里念了很多次的经，换元到 \(\lambda\) 上，RF下</p>
+<div class="math-display">\[\frac{\sigma'}{\alpha'}=\frac{t'}{1-t'}=\frac{s\,t}{1-t}=s\cdot\frac{\sigma}{\alpha}\quad\Longrightarrow\quad \lambda'=\lambda-\log s\]</div>
+<p>所以，timestep shift的本质是平移 \(\lambda\) ！这就是为什么它叫&quot;shift&quot;。\(s&gt;1\) 让 \(\lambda\) 整体变小，即整体更noisy。</p>
+<p>关于 \(s\) 的具体取值，各家不一：</p>
+<ul>
+<li>Wan<a href="https://arxiv.org/abs/2503.20314">[5]</a>里shift是个和分辨率以及任务都有关的常数。Wan2.1里t2v默认 \(s=5\)，i2v在480p降到 \(s=3\)（720p仍是5），而vace、flf2v（注：首尾帧生成视频）\(s=16\)；Wan2.2里（注：Wan 2.2有high-noise和low-noise两个expert，但两个expert共享shift）t2v用 \(s=12\)、i2v/ti2v用 \(s=5\)。可见“分辨率越高 \(s\) 越大”只是最粗的规律，i2v/VACE这些带更多条件信息的任务，合适的噪声档位本来就不一样。Cosmos 2/2.5 作为换皮Wan也follow了Wan recipe。</li>
+<li>SD3<a href="https://arxiv.org/abs/2403.03206">[1]</a>把shift factor跟分辨率挂钩：\(s=\sqrt{m/n}\)，其中 \(n,m\) 分别是参考、目标分辨率的像素数（\(H\times W\)）。</li>
+<li>FLUX<a href="https://github.com/black-forest-labs/flux">[6]</a>让 \(\mu=\log s\) 对token数 \(L\) 取 \(0.5\) (\(L=256\))、\(1.15\) (\(L=4096\)) 线性插值，也就是 \(s=\exp\!\big(0.5+\tfrac{0.65}{3840}(L-256)\big)\)。</li>
+<li>Cosmos 3<a href="https://arxiv.org/abs/2606.02800">[10]</a>的 \(s\) 按分辨率分档：pre-training 256p/480p/720p 取 \(s=1/3/5\)，mid-training则抬到 \(3/5/10\)。</li>
+</ul>
+<h2 id="%E6%8E%A8%E7%90%86%E6%97%B6%E7%9A%84timestep-sampling" tabindex="-1"><a class="header-anchor" href="#%E6%8E%A8%E7%90%86%E6%97%B6%E7%9A%84timestep-sampling">推理时的timestep sampling</a></h2>
+<p>推理时，ODE solver通常只执行有限步——每走一步都要调用一次（或多次，如果你用高阶solver）网络 \(\boldsymbol{v}_\theta\) 。这个次数有个专门的名字叫NFE（Number of Function Evaluations，函数求值次数）。</p>
+<p>做过ml的人想必都听过“训推一致”这个词——但对我们连续的扩散模型来说，即便我们推理时使用了和训练一致的 \(s\) 做shift \(t'=\frac{st}{1+(s-1)t}\) （这当然是必须要有的），训推也是不一致的——因为训练的t是一个连续分布，推理的t退化成了和NFE预算 \(N\) 有关的序列 \(1=t_0&gt;t_1&gt;\dots&gt;t_N\approx0\) 。在上一章讲过，在diffusion的真正训练目标（以RF为例，模型学会的速度场是条件期望 \(\mathbb{E}[\boldsymbol{\epsilon}-\boldsymbol{x}_0\mid\boldsymbol{x}_t]\) ）下，ODE trajectory一定是弯的，因此NFE越小误差越大，当NFE小到个位数（比如4步）的时候，误差会大到无法接受。</p>
+<p>这也就是为什么我们需要<strong>蒸馏</strong>——虽然teacher是连续的，但只要用teacher蒸馏一个训练时也是few-step的student就可以啦。 请看下集！</p>
+<h2 id="Wan-2.2%E7%9A%84%E2%80%9CMoE%E2%80%9D" tabindex="-1"><a class="header-anchor" href="#Wan-2.2%E7%9A%84%E2%80%9CMoE%E2%80%9D">Wan 2.2的“MoE”</a></h2>
+<p>这一整章都在讨论怎么更好的采样t来帮助（同一个）模型学会diffusion。</p>
+<p>Wan 2.2表示：那不如干脆搞两个模型吧！这也就是所谓MoE（虽然也叫MoE，但和LLM里的MoE突出一个毫无关系），两个14B 的专家——<strong>high-noise expert</strong> 管去噪早期（\(t\) 大、噪声重、SNR低，负责整体 layout），<strong>low-noise expert</strong> 管后期（\(t\) 小，负责细节），然后router是一个纯对t的阈值（T2V-A14B是0.875，I2V-A14B是0.9）。</p>
+<blockquote>
+<p>当然，两个专家还是share了timestep shift的（t2v的 \(s=12\)、i2v/ti2v的 \(s=5\)），只不过是同一条 shift 过的 schedule 切成两段而已。</p>
+</blockquote>
+<h2 id="Reference" tabindex="-1"><a class="header-anchor" href="#Reference">Reference</a></h2>
+<ol>
+<li>Patrick Esser, Sumith Kulal, Andreas Blattmann, Rahim Entezari, Jonas Müller, Harry Saini, Yam Levi, Dominik Lorenz, Axel Sauer, Frederic Boesel, Dustin Podell, Tim Dockhorn, Zion English, and Robin Rombach. Scaling rectified flow transformers for high-resolution image synthesis. In ICML, 2024. <a href="https://arxiv.org/abs/2403.03206">arXiv:2403.03206</a></li>
+<li>Emiel Hoogeboom, Jonathan Heek, and Tim Salimans. simple diffusion: End-to-end diffusion for high resolution images. In ICML, 2023. <a href="https://arxiv.org/abs/2301.11093">arXiv:2301.11093</a></li>
+<li>Diederik P. Kingma and Ruiqi Gao. Understanding diffusion objectives as the ELBO with simple data augmentation. In NeurIPS, 2023. <a href="https://arxiv.org/abs/2303.00848">arXiv:2303.00848</a></li>
+<li>Tero Karras, Miika Aittala, Timo Aila, and Samuli Laine. Elucidating the design space of diffusion-based generative models. In NeurIPS, 2022. <a href="https://arxiv.org/abs/2206.00364">arXiv:2206.00364</a></li>
+<li>Wan Team, Alibaba. Wan: Open and advanced large-scale video generative models. arXiv preprint, 2025. <a href="https://arxiv.org/abs/2503.20314">arXiv:2503.20314</a></li>
+<li>Black Forest Labs. FLUX.1. 2024. <a href="https://github.com/black-forest-labs/flux">github.com/black-forest-labs/flux</a></li>
+<li>Qwen Team, Alibaba. Qwen-Image technical report. arXiv preprint, 2025. <a href="https://arxiv.org/abs/2508.02324">arXiv:2508.02324</a></li>
+<li>Movie Gen Team, Meta. Movie Gen: A cast of media foundation models. arXiv preprint, 2024. <a href="https://arxiv.org/abs/2410.13720">arXiv:2410.13720</a></li>
+<li>Tianhong Li and Kaiming He. Back to basics: Let denoising generative models denoise. In CVPR, 2026. <a href="https://arxiv.org/abs/2511.13720">arXiv:2511.13720</a></li>
+<li>NVIDIA. Cosmos 3: Omnimodal world models for Physical AI. arXiv preprint, 2026. <a href="https://arxiv.org/abs/2606.02800">arXiv:2606.02800</a></li>
+<li>Qi Qin, Le Zhuo, Yi Xin, Ruoyi Du, Zhen Li, Bin Fu, Yiting Lu, Jiakang Yuan, Xinyue Li, Dongyang Liu, Xiangyang Zhu, Manyuan Zhang, Will Beddow, Erwann Millon, Victor Perez, Wenhai Wang, Conghui He, Bo Zhang, Xiaohong Liu, Hongsheng Li, Yu Qiao, Chang Xu, and Peng Gao. Lumina-Image 2.0: A unified and efficient image generative framework. arXiv preprint, 2025. <a href="https://arxiv.org/abs/2503.21758">arXiv:2503.21758</a></li>
+</ol>
+
+      </div>
+    </article>
+
+    <nav class="post-nav-bottom">
+      <a class="post-nav-link post-nav-link--prev" href="/blog/posts/modern_diffusion_1.html"><span class="post-nav-link__label">← 上一篇</span><span class="post-nav-link__title">家用现代扩散模型速成 (1)：从Diffusion到Rectified Flow</span></a>
+      <span></span>
+    </nav>
+
+    <footer class="footer post__footer">
+      
+      <p>© 老鸽子茶话会 · made with 🍵</p>
+    </footer>
+
+  </main>
+
+  <script src="/assets/js/main.js"></script>
+  <script src="/assets/js/blog.js"></script>
+</body>
+
+</html>
