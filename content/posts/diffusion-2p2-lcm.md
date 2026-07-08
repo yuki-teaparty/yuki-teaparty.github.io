@@ -2,6 +2,7 @@
 title: "家用扩散模型 (2.2)：Latent Consistency Models"
 date: "2023-11-26 22:40"
 slug: diffusion-2p2-lcm
+draft: false
 order: 2.2
 series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/668940718"

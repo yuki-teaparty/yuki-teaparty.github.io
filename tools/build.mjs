@@ -129,7 +129,7 @@ async function main() {
   for (const f of files) {
     const raw = await readFile(path.join(CONTENT_DIR, f), 'utf8');
     const { data, content } = matter(raw);
-    if (data.draft) continue; // draft 文章不参与编译（不进侧栏/列表，也不生成 HTML）
+    if (data.draft !== false) continue; // 默认视为 draft；只有 front-matter 显式 draft: false 才发布（不进侧栏/列表，也不生成 HTML）
     const slug = data.slug || f.replace(/\.md$/, '');
     posts.push({
       slug,
@@ -179,7 +179,7 @@ async function main() {
           })
           .join('\n');
         return `        <div class="sidebar__group">
-          <p class="sidebar__heading">${escapeHtml(key)}系列</p>
+          <p class="sidebar__heading">${escapeHtml(key)}</p>
           <ul class="sidebar__list">
 ${items}
           </ul>
@@ -233,7 +233,7 @@ ${items}
         })
         .join('\n');
       return `    <section class="section reveal" aria-labelledby="series-${idx}-title">
-      <h2 id="series-${idx}-title" class="section__title"><span>${escapeHtml(key)}系列</span></h2>
+      <h2 id="series-${idx}-title" class="section__title"><span>${escapeHtml(key)}</span></h2>
       <div class="cards">
 ${cards}
       </div>
