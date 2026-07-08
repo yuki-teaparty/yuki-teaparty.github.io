@@ -12,7 +12,8 @@
 | 路径 | 说明 |
 |------|------|
 | `index.html` | 主页（Hero / 关于 / 精选作品 / 页脚），手写维护 |
-| `content/posts/*.md` | **博客文章源**（带 YAML front-matter，手可编辑）|
+| `content/posts/*.md` | **博客文章源**（front-matter 只放内容元信息）|
+| `content/series.yaml` | **站点结构清单**：列出哪些文章发布、归哪个专题、排什么顺序 |
 | `blog/index.html`、`blog/posts/*.html` | 由 build 生成的博客页面（提交进仓库）|
 | `assets/css/style.css` | 茶话会主题样式（含顶部导航）|
 | `assets/css/blog.css` | 博客文章排版样式 |
@@ -43,31 +44,37 @@ python -m http.server 4000   # 在仓库根目录运行，访问 http://localhos
 
 文章的真正源头是 `content/posts/` 里的 markdown，`blog/` 下的 HTML 是编译产物。
 
-1. 在 `content/posts/` 新建或编辑 `.md`。front-matter 示例：
+1. 在 `content/posts/` 新建或编辑 `.md`。front-matter 只放内容元信息——**不再需要 draft / order / series**（发布与否、归哪个专题、排第几，全部交给 `content/series.yaml`）：
 
    ```yaml
    ---
    title: "文章标题"
    date: "2024-01-01 12:00"
    slug: my-post           # 决定输出文件名 blog/posts/my-post.html
-   order: 3                # 列表页排序用（小的在前）
    summary: "一句话摘要"
-   source: ""
-   original_url: ""
+   source: ""              # 可选（知乎搬运遗留）
+   original_url: ""        # 可选
    ---
    ```
 
    正文里公式照常用 `$行内$` / `$$行间$$`（运行时由 MathJax 渲染；`\bm` 等非标准宏已在模板的 `macros` 里补好）。
    图片放 `assets/img/posts/<slug>/`，用 `/assets/img/posts/<slug>/xxx.jpg` 这样的绝对路径引用。
 
-2. 重新编译并预览：
+2. 把文件名（不含 `.md`）登记进 `content/series.yaml`，**没登记就不会发布**。专题从上到下＝页面从新到旧，专题内从上到下＝阅读顺序：
+
+   ```yaml
+   我的专题:
+     - my-post
+   ```
+
+3. 重新编译并预览：
 
    ```powershell
    .\build.ps1 -Serve        # PowerShell
    # 或  ./build.sh --serve   # Git Bash
    ```
 
-3. 满意后提交，GitHub Pages 自动上线：
+4. 满意后提交，GitHub Pages 自动上线：
 
    ```bash
    git add content/ blog/ assets/ && git commit -m "..." && git push

@@ -2,9 +2,6 @@
 title: "家用扩散模型 (2.1)：Variational Score Distillation"
 date: "2023-11-26 00:45"
 slug: diffusion-2p1-vsd
-draft: false
-order: 2.1
-series: "家用扩散模型"
 original_url: "https://zhuanlan.zhihu.com/p/668704605"
 summary: "有关Variational Score Distillation及其变体"
 source: 知乎专栏

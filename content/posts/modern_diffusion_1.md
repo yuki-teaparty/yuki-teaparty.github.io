@@ -2,9 +2,6 @@
 title: "家用现代扩散模型速成 (1)：从Diffusion到Rectified Flow"
 date: "2026-06-28 00:30"
 slug: modern_diffusion_1
-draft: false
-order: 3
-series: "家用现代扩散模型速成"
 summary: "Rectified Flow还是值得单开一篇讲的。"
 ---
 

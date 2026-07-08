@@ -7,16 +7,18 @@
 //   MathJax 的 \(..\) / \[..\]（运行时由 MathJax 渲染，见模板）
 // - 套用 tools/templates 下的模板 + 茶话会主题
 // ─────────────────────────────────────────────────────────────
-import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
+import yaml from 'js-yaml'; // gray-matter 的传递依赖；用来解析 content/series.yaml
 import MarkdownIt from 'markdown-it';
 import anchor from 'markdown-it-anchor';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, '..');
 const CONTENT_DIR = path.join(REPO, 'content', 'posts');
+const MANIFEST = path.join(REPO, 'content', 'series.yaml');
 const BLOG_DIR = path.join(REPO, 'blog');
 const POSTS_OUT = path.join(BLOG_DIR, 'posts');
 const TPL_DIR = path.join(__dirname, 'templates');
@@ -115,49 +117,47 @@ function makeExcerpt(summary, limit = 120) {
 
 // ── 主流程 ──────────────────────────────────────────────────────
 async function main() {
-  const files = (await readdir(CONTENT_DIR)).filter((f) => f.endsWith('.md'));
-  if (!files.length) {
-    console.error('✗ content/posts/ 下没有 markdown 文件，先跑 npm run migrate');
-    process.exit(1);
-  }
-
   const postTpl = await readFile(path.join(TPL_DIR, 'post.html'), 'utf8');
   const indexTpl = await readFile(path.join(TPL_DIR, 'index.html'), 'utf8');
 
-  // 读取 + 解析全部文章
-  const posts = [];
-  for (const f of files) {
-    const raw = await readFile(path.join(CONTENT_DIR, f), 'utf8');
-    const { data, content } = matter(raw);
-    if (data.draft !== false) continue; // 默认视为 draft；只有 front-matter 显式 draft: false 才发布（不进侧栏/列表，也不生成 HTML）
-    const slug = data.slug || f.replace(/\.md$/, '');
-    posts.push({
-      slug,
-      title: data.title || slug,
-      series: data.series || '',
-      date: data.date || '',
-      order: typeof data.order === 'number' ? data.order : 999,
-      summary: data.summary || '',
-      source: data.source || '',
-      original_url: data.original_url || '',
-      html: md.render(content),
-    });
+  // content/series.yaml 是唯一的结构来源：决定发布哪些文章、归属哪个专题、以及顺序。
+  // 专题从上到下 = 页面从前到后；专题内文章从上到下 = 阅读顺序（第 1 篇在前）。
+  // 只有列在清单里的才发布，其余（含 claude_drafts/）一律当草稿跳过；front-matter 不再需要 draft / order / series。
+  const manifest = yaml.load(await readFile(MANIFEST, 'utf8'));
+  const entries = manifest && typeof manifest === 'object' ? Object.entries(manifest) : [];
+  if (!entries.length) {
+    console.error('✗ content/series.yaml 为空或格式不对（应为「专题名: [文件名, ...]」的映射）');
+    process.exit(1);
   }
-  posts.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
 
-  // 按 series 分专题；组内仍按 order 升序（第 1 篇在前）
+  // 按清单顺序读取每篇文章
   const seriesOrder = [];
   const seriesMap = new Map();
-  for (const p of posts) {
-    const key = p.series || '未分类';
-    if (!seriesMap.has(key)) {
-      seriesMap.set(key, []);
-      seriesOrder.push(key);
+  for (const [key, names] of entries) {
+    const list = [];
+    seriesMap.set(key, list);
+    seriesOrder.push(key);
+    for (const name of names || []) {
+      let raw;
+      try {
+        raw = await readFile(path.join(CONTENT_DIR, `${name}.md`), 'utf8');
+      } catch {
+        console.error(`✗ series.yaml 里列了 "${name}"，但 content/posts/${name}.md 不存在`);
+        process.exit(1);
+      }
+      const { data, content } = matter(raw);
+      list.push({
+        slug: data.slug || name,
+        title: data.title || name,
+        date: data.date || '',
+        summary: data.summary || '',
+        source: data.source || '',
+        original_url: data.original_url || '',
+        html: md.render(content),
+      });
     }
-    seriesMap.get(key).push(p);
   }
-  // 专题之间按时间倒序：较新的专栏（order 更大）排在更前面
-  seriesOrder.sort((a, b) => seriesMap.get(b)[0].order - seriesMap.get(a)[0].order);
+  const posts = seriesOrder.flatMap((key) => seriesMap.get(key));
 
   // 同专题内的上一篇/下一篇（不跨专题互链）
   const navOf = new Map();
@@ -245,7 +245,7 @@ ${cards}
 
   console.log(`✓ 生成 ${posts.length} 篇文章 + 列表页`);
   console.log(`  blog/index.html`);
-  posts.forEach((p) => console.log(`  blog/posts/${p.slug}.html  (#${p.order} ${p.title})`));
+  posts.forEach((p) => console.log(`  blog/posts/${p.slug}.html  (${p.title})`));
 }
 
 main();

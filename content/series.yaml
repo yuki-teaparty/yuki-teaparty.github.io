@@ -1,0 +1,19 @@
+# 站点结构清单 —— 谁发布、归哪个专题、什么顺序，全在这里定。
+#
+#   key   = 专题名（从上到下 = 页面上从新到旧的排列）
+#   value = 该专题的文章列表（从上到下 = 阅读顺序，第 1 篇在最前），写 content/posts/ 下的文件名（不含 .md）
+#
+# 只有在这里列出的 .md 才会发布；没列的一律当草稿跳过。
+# 因此文章的 front-matter 不再需要 draft / order / series —— 只留 title / date / slug / summary 等内容元信息。
+
+家用现代扩散模型速成:
+  - modern_diffusion_1
+  - modern_diffusion_2
+
+家用扩散模型:
+  - diffusion-1-sde
+  - diffusion-1p5-ode
+  - diffusion-1p7-samplers
+  - diffusion-2-ldm
+  - diffusion-2p1-vsd
+  - diffusion-2p2-lcm

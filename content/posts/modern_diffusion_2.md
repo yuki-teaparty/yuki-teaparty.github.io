@@ -2,10 +2,7 @@
 title: "家用现代扩散模型速成 (2)：Weighting Scheme"
 date: "2026-06-30 22:00"
 slug: modern_diffusion_2
-order: 3.05
-series: "家用现代扩散模型速成"
 summary: "关于diffusion中t的采样，以及更多"
-draft: false
 ---
 
 ## 什么是Weighting scheme
